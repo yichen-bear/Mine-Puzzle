@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>謎雷拼圖 (Mine-Puzzle Quest)</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        // Firebase 設定物件
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-iMHMvDmMViANx33ho-Ac3rwitt8FE-w",
+            authDomain: "mine-puzzle-quest.firebaseapp.com",
+            projectId: "mine-puzzle-quest",
+            storageBucket: "mine-puzzle-quest.firebasestorage.app", // 使用您提供的 storageBucket
+            messagingSenderId: "87559816136",
+            appId: "1:87559816136:web:2fe898e7ebbb9ee9f776fd",
+            measurementId: "G-ESC61WWY0P"
+        };
+
+        // Firebase 初始化將在主要的 JavaScript 檔案中處理
+        // 範例:
+        // if (typeof firebase !== 'undefined') {
+        //     firebase.initializeApp(firebaseConfig);
+        //     console.log("Firebase Initialized");
+        // } else {
+        //     console.error("Firebase SDK not loaded.");
+        // }
+    </script>
+
+
+
+</head>
+<body>
+
+    <script src="main.js"></script>
+
+    <div id="loading-indicator"><span>載入中...</span></div>
+
+    <div id="user-info-container" style="display:none;">
+        <span id="username-display">玩家名稱</span>
+        <button id="logout-button">登出</button>
+    </div>
+
+    <div class="container">
+        <div id="auth-screen" class="screen active">
+            <h1>謎雷拼圖</h1>
+            <div id="login-form">
+                <h2>登入</h2>
+                <input type="text" id="login-username" placeholder="電子郵件" autocomplete="username">
+                <input type="password" id="login-password" placeholder="密碼" autocomplete="current-password">
+                <button id="login-button">登入</button>
+                <p class="error-message" id="login-error"></p>
+                <a href="#" id="show-register-link" class="form-link">還沒有帳號嗎？點此註冊</a>
+            </div>
+            <div id="register-form" style="display:none;">
+                <h2>註冊新帳號</h2>
+                <input type="text" id="register-username" placeholder="輸入電子郵件" autocomplete="username">
+                <input type="password" id="register-password" placeholder="設定密碼 (至少6位元)" autocomplete="new-password">
+                <input type="password" id="register-confirm-password" placeholder="再次輸入密碼" autocomplete="new-password">
+                <button id="register-button">註冊</button>
+                <p class="error-message" id="register-error"></p>
+                <a href="#" id="show-login-link" class="form-link">已經有帳號了？點此登入</a>
+            </div>
+            <hr style="margin: 20px 0; border-top: 1px solid #eee;">
+            <button id="guest-login-button" style="background-color: #95a5a6;">以訪客身份遊玩</button>
+            <button id="google-login-button" style="background-color: #db4437;">使用 Google 帳戶登入</button>
+        </div>
+
+        <div id="level-select-screen" class="screen">
+            <h2>選擇關卡</h2>
+            <div id="level-select-buttons">
+                </div>
+        </div>
+
+        <div id="in-level-screen" class="screen">
+            <h2 id="current-level-title">關卡標題</h2>
+            <p id="level-puzzle-progress">拼圖進度: 0/0</p>
+            <button id="play-minesweeper-button">開始踩地雷 (獲取拼圖)</button>
+            <button id="play-jigsaw-button">開始拼圖</button>
+            <hr style="margin: 15px 0; border-top: 1px solid #eee;">
+            <button id="back-to-level-select">返回關卡選擇</button>
+        </div>
+
+        <div id="minesweeper-screen" class="screen">
+            <h2 id="minesweeper-level-title">踩地雷</h2>
+            <div style="margin-bottom: 10px;">
+                <span>剩餘地雷: <span id="mines-left">0</span></span> |
+                <span>錯誤次數: <span id="errors-made">0</span> / <span id="max-errors">3</span></span>
+            </div>
+            <div id="minesweeper-grid-container" style="overflow-x: auto; padding-bottom: 5px;">
+                 <div id="minesweeper-grid">
+                    </div>
+            </div>
+            <p id="minesweeper-message" class="error-message" style="min-height: 1.3em; margin-top:10px;"></p>
+            <button id="minesweeper-back-button">放棄並返回</button>
+        </div>
+
+        <div id="jigsaw-screen" class="screen">
+            <h2 id="jigsaw-level-title">拼圖遊戲</h2>
+            <div id="jigsaw-puzzle-area">
+                <div id="jigsaw-frame-container">
+                    </div>
+                <div id="jigsaw-pieces-container">
+                    </div>
+            </div>
+            <p id="jigsaw-message" class="error-message" style="min-height: 1.3em; margin-top:10px;"></p>
+            <button id="jigsaw-back-button">儲存並返回</button>
+        </div>
+    </div> </body>
+</html>
+
+<div scr=""></div>

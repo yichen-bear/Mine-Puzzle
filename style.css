@@ -1,0 +1,423 @@
+/* --- 基本重設與全域樣式 --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f2f5; /* 淡雅的背景色 */
+    color: #333;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: calc(100vh - 40px); /* 考慮 body 的 padding */
+    box-sizing: border-box;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 16px; /* 更大的圓角 */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); /* 更明顯的陰影 */
+    text-align: center;
+}
+
+/* --- 畫面切換與動畫 --- */
+.screen {
+    display: none;
+    width: 100%;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.screen.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 標題 --- */
+h1, h2, h3 {
+    color: #2c3e50; /* 深藍灰色 */
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+h1 { font-size: 2.5em; letter-spacing: -0.5px; }
+h2 { font-size: 2em; }
+h3 { font-size: 1.5em; }
+
+/* --- 按鈕 --- */
+button {
+    background-color: #3498db; /* 主題藍 */
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    margin: 10px 5px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+    text-transform: uppercase; /* 按鈕文字大寫 (可選) */
+    letter-spacing: 0.5px;
+}
+
+button:hover {
+    background-color: #2980b9; /* 滑鼠懸停時變深 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+button:active {
+    transform: translateY(0px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+button:disabled {
+    background-color: #bdc3c7; /* 禁用時的顏色 */
+    color: #7f8c8d;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* 特殊按鈕樣式 */
+#google-login-button {
+    background-color: #db4437; /* Google 紅 */
+}
+#google-login-button:hover {
+    background-color: #c23321;
+}
+#guest-login-button {
+    background-color: #95a5a6; /* 訪客登入用中性色 */
+}
+#guest-login-button:hover {
+    background-color: #7f8c8d;
+}
+#logout-button {
+    background-color: #e74c3c; /* 登出用紅色 */
+    padding: 8px 15px;
+    font-size: 0.9em;
+    text-transform: none; /* 登出按鈕不大寫 */
+}
+#logout-button:hover {
+    background-color: #c0392b;
+}
+
+
+/* --- 輸入框 --- */
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+    width: calc(100% - 28px); /* 減去 padding 和 border */
+    padding: 14px;
+    margin-bottom: 18px;
+    border: 1px solid #dfe6e9; /* 更柔和的邊框色 */
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 1em;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); /* 聚焦時的陰影效果 */
+}
+
+/* --- 表單相關 --- */
+.error-message {
+    color: #e74c3c;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    min-height: 1.3em; /* 避免內容跳動 */
+}
+
+a.form-link {
+    color: #3498db;
+    text-decoration: none;
+    font-size: 0.9em;
+    display: inline-block;
+    margin-top: 10px;
+    transition: color 0.2s;
+}
+a.form-link:hover {
+    text-decoration: underline;
+    color: #2980b9;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #ecf0f1; /* 分隔線顏色 */
+    margin: 25px 0;
+}
+
+/* --- 頂部用戶資訊 --- */
+#user-info-container {
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.97); /* 略微透明 */
+    padding: 10px 18px;
+    border-radius: 25px; /* 膠囊形狀 */
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+}
+#username-display {
+    margin-right: 18px;
+    font-weight: 600;
+    color: #34495e;
+}
+
+/* --- 載入指示器 --- */
+#loading-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.65);
+    z-index: 9999;
+    color: white;
+    font-size: 1.6em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0; /* 預設透明 */
+    visibility: hidden; /* 預設隱藏 */
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+#loading-indicator.active {
+    opacity: 1;
+    visibility: visible;
+}
+#loading-indicator span { /* 讓文字有點效果 */
+    padding: 15px 25px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 8px;
+}
+
+
+/* --- 關卡選擇 --- */
+#level-select-buttons button {
+    margin: 12px;
+    padding: 22px 35px;
+    font-size: 1.2em;
+    min-width: 180px;
+}
+
+/* --- 遊戲中畫面 --- */
+#in-level-screen p {
+    font-size: 1.1em;
+    margin-bottom: 20px;
+    color: #555;
+}
+#in-level-screen button {
+    display: block;
+    width: calc(100% - 40px); /* 讓按鈕寬一點 */
+    max-width: 350px; /* 但不要太寬 */
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 15px;
+}
+
+/* --- 踩地雷遊戲 --- */
+#minesweeper-grid-container {
+    overflow-x: auto; /* 如果格子太多，允許水平滾動 */
+    padding-bottom: 10px; /* 給滾動條一點空間 */
+    margin: 20px auto;
+    max-width: 100%; /* 確保容器不會超出父元素 */
+}
+
+#minesweeper-grid {
+    display: grid; /* JS 會設定 grid-template-columns */
+    border: 2px solid #95a5a6; /* 遊戲板邊框 */
+    background-color: #ecf0f1; /* 遊戲板背景 */
+    margin: 0 auto; /* 使其在容器內置中 (如果容器比它寬) */
+    user-select: none; /* 禁止選取格子內的文字 */
+    touch-action: manipulation; /* 改善觸控體驗 */
+    width: fit-content; /* 讓網格寬度自適應內容 */
+}
+
+.ms-cell {
+    /* JS 會設定 width, height, fontSize, lineHeight */
+    border: 1px solid #bdc3c7; /* 格子邊框 */
+    background-color: #dfe6e9; /* 未翻開的格子背景 */
+    display: flex; /* 使用 flex 垂直和水平置中內容 */
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-weight: bold;
+}
+
+.ms-cell:hover {
+    background-color: #ced6e0; /* 滑鼠懸停時的背景 */
+}
+
+.ms-cell.revealed {
+    background-color: #b2bec3; /* 已翻開的格子背景 */
+    cursor: default;
+}
+.ms-cell.revealed:hover { /* 翻開後不應再有懸停效果 */
+    background-color: #b2bec3;
+}
+
+.ms-cell.mine {
+    background-color: #e74c3c !important; /* 地雷背景 (重要以覆蓋revealed) */
+    color: white;
+    font-size: 1.2em; /* 讓炸彈圖示大一點 */
+}
+
+.ms-cell.flagged::before {
+    content: "🚩";
+    font-size: 1em; /* 調整旗幟大小，可根據格子大小調整 */
+    color: #c0392b;
+}
+
+/* 數字顏色 */
+.ms-cell[data-mines="1"] { color: #3498db; } /* 藍 */
+.ms-cell[data-mines="2"] { color: #2ecc71; } /* 綠 */
+.ms-cell[data-mines="3"] { color: #e74c3c; } /* 紅 */
+.ms-cell[data-mines="4"] { color: #8e44ad; } /* 紫 */
+.ms-cell[data-mines="5"] { color: #d35400; } /* 橙 */
+.ms-cell[data-mines="6"] { color: #16a085; } /* 青 */
+.ms-cell[data-mines="7"] { color: #2c3e50; } /* 深灰藍 */
+.ms-cell[data-mines="8"] { color: #7f8c8d; } /* 灰 */
+
+#minesweeper-screen .game-info { /* 包裝地雷數和錯誤數的容器 */
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: #555;
+}
+#minesweeper-screen .game-info span span { /* 數字本身 */
+    font-weight: bold;
+    color: #333;
+}
+
+/* --- 拼圖遊戲 --- */
+#jigsaw-puzzle-area {
+    display: flex;
+    flex-wrap: wrap; /* 在小螢幕上允許換行 */
+    justify-content: space-around; /* 或 space-between */
+    margin-top: 20px;
+    gap: 20px; /* 拼圖框和碎片區之間的間隔 */
+}
+
+#jigsaw-frame-container {
+    display: grid; /* JS 會設定 grid-template-columns/rows */
+    border: 3px solid #34495e; /* 拼圖框邊框 */
+    background-color: #ecf0f1; /* 拼圖框背景 */
+    position: relative; /* 用於絕對定位已放置的碎片 (如果需要) */
+    padding: 5px; /* 內邊距，讓碎片不要緊貼邊框 */
+    box-shadow: 0 0 10px rgba(0,0,0,0.1) inset; /* 內陰影 */
+}
+
+.jigsaw-slot {
+    /* JS 會設定 width, height */
+    border: 1px dashed #95a5a6; /* 格子虛線邊框 */
+    background-color: rgba(255,255,255, 0.3); /* 半透明背景 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box; /* 確保邊框在尺寸內 */
+}
+.jigsaw-slot:hover { /* 拖曳碎片到格子上時的視覺回饋 */
+    background-color: rgba(52, 152, 219, 0.1);
+    border-style: solid;
+}
+
+#jigsaw-pieces-container {
+    width: 100%; /* 在 flex-wrap 時佔滿一行 */
+    max-width: 400px; /* 限制最大寬度 */
+    min-height: 200px; /* 最小高度 */
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start; /* 碎片從頂部開始排列 */
+    gap: 8px; /* 碎片之間的間隔 */
+    padding: 15px;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.jigsaw-piece {
+    /* JS 會設定 width, height (canvas) */
+    cursor: grab;
+    border: 1px solid #7f8c8d;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out, opacity 0.2s;
+    background-color: #fff; /* 如果 canvas 透明，可以看到背景 */
+}
+
+.jigsaw-piece:hover {
+    transform: scale(1.05);
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
+}
+
+.jigsaw-piece.dragging {
+    opacity: 0.6;
+    cursor: grabbing;
+    transform: scale(1.1); /* 拖曳時放大一點 */
+    box-shadow: 4px 4px 10px rgba(0,0,0,0.35);
+}
+
+.jigsaw-piece.placed-animation { /* 放置成功時的短暫動畫 */
+    animation: piecePlaced 0.8s ease-out;
+}
+
+@keyframes piecePlaced {
+    0% { transform: scale(1); box-shadow: 0 0 5px rgba(46, 204, 113, 0); }
+    50% { transform: scale(1.15); box-shadow: 0 0 15px 5px rgba(46, 204, 113, 0.7); } /* 綠色光暈 */
+    100% { transform: scale(1); box-shadow: 0 0 5px rgba(46, 204, 113, 0); }
+}
+
+/* --- 響應式調整 --- */
+@media (max-width: 768px) {
+    body { padding: 10px; }
+    .container { padding: 20px; margin: 10px auto; }
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.6em; }
+    button { padding: 10px 18px; font-size: 0.95em; }
+    input[type="text"], input[type="password"], input[type="email"] { padding: 12px; }
+
+    #level-select-buttons button { padding: 18px 25px; font-size: 1.1em; min-width: 150px; }
+    #in-level-screen button { width: calc(100% - 20px); }
+
+    #jigsaw-puzzle-area {
+        flex-direction: column; /* 垂直排列拼圖框和碎片區 */
+        align-items: center;
+    }
+    #jigsaw-pieces-container {
+        width: 90%;
+        margin-top: 20px;
+        max-width: none; /* 在垂直排列時，允許它更寬 */
+    }
+}
+
+@media (max-width: 480px) {
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.4em; }
+    button { padding: 10px 15px; font-size: 0.9em; }
+    #user-info-container { padding: 6px 10px; top: 5px; right: 5px;}
+    #username-display { font-size: 0.9em; margin-right: 8px;}
+    #logout-button { padding: 6px 10px; font-size: 0.8em;}
+
+    #minesweeper-grid-container {
+        /* 在非常小的螢幕上，可能需要更積極地縮小格子 */
+        /* JS 中的 cellSize 計算會處理大部分情況 */
+    }
+}
