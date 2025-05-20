@@ -55,6 +55,7 @@
                 <button id="login-button">登入</button>
                 <p class="error-message" id="login-error"></p>
                 <a href="#" id="show-register-link" class="form-link">還沒有帳號嗎？點此註冊</a>
+                <a href="#" id="forgot-password-link" class="form-link" style="display: block; margin-top: 10px;">忘記密碼？</a>
             </div>
             <div id="register-form" style="display:none;">
                 <h2>註冊新帳號</h2>
@@ -64,6 +65,14 @@
                 <button id="register-button">註冊</button>
                 <p class="error-message" id="register-error"></p>
                 <a href="#" id="show-login-link" class="form-link">已經有帳號了？點此登入</a>
+            </div>
+            <div id="forgot-password-section" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <h3>重設密碼</h3>
+                <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">請輸入您註冊時使用的電子郵件地址...</p>
+                <input type="email" id="reset-email-input" placeholder="輸入註冊的電子郵件" autocomplete="email">
+                <button id="send-reset-email-button">發送重設郵件</button>
+                <button id="cancel-reset-button" style="background-color: #7f8c8d;">返回登入</button>
+                <p class="error-message" id="reset-info-message" style="margin-top: 10px;"></p>
             </div>
             <hr style="margin: 20px 0; border-top: 1px solid #eee;">
             <button id="guest-login-button" style="background-color: #95a5a6;">以訪客身份遊玩</button>

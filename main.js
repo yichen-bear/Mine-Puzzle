@@ -22,11 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 全域狀態與設定 ---
     let currentUser = null;
-    let currentLevelId = null;
-    let currentLevelConfig = null;
+    let currentMainLevelId = null;    // 當前選擇的主關卡 ID
+    let currentSubLevelIndex = 0;   // 當前主關卡下的小關卡索引
+    let currentMainLevelConfig = null; // 當前主關卡的設定物件
     let currentMinesweeperGame = null;
     let currentJigsawState = { image: null, pieces: [], slots: [], ownedPieceIds: [], placedPieceMap: {} };
-    let playerData = { username: '', maxUnlockedLevel: 1, levelProgress: {} };
+    let playerData = { 
+        username: '', 
+        maxUnlockedLevel: 1, 
+        levelProgress: {} // 例如: { 1: {isPuzzleComplete:false, ownedPieces:[], placedPieces:{}, completedSubLevels: 0}, ... }
+    };
 
     // --- UI 元素參照 ---
     const loadingIndicator = document.getElementById('loading-indicator');
@@ -37,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
         minesweeper: document.getElementById('minesweeper-screen'),
         jigsaw: document.getElementById('jigsaw-screen'),
     };
-
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const loginEmailInput = document.getElementById('login-username'); 
@@ -51,18 +55,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const usernameDisplay = document.getElementById('username-display');
     const logoutButton = document.getElementById('logout-button');
     const googleLoginButton = document.getElementById('google-login-button'); 
-
     const forgotPasswordLink = document.getElementById('forgot-password-link');
     const forgotPasswordSection = document.getElementById('forgot-password-section');
     const resetEmailInput = document.getElementById('reset-email-input');
     const sendResetEmailButton = document.getElementById('send-reset-email-button');
     const cancelResetButton = document.getElementById('cancel-reset-button');
     const resetInfoMessage = document.getElementById('reset-info-message');
-
-
     const levelSelectButtonsContainer = document.getElementById('level-select-buttons');
     const currentLevelTitle = document.getElementById('current-level-title');
     const levelPuzzleProgressDisplay = document.getElementById('level-puzzle-progress');
+    const playMinesweeperButton = document.getElementById('play-minesweeper-button'); 
     const minesweeperGridElement = document.getElementById('minesweeper-grid');
     const minesweeperGridContainer = document.getElementById('minesweeper-grid-container');
     const minesLeftDisplay = document.getElementById('mines-left');
@@ -73,12 +75,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const jigsawPiecesContainer = document.getElementById('jigsaw-pieces-container');
     const jigsawMessage = document.getElementById('jigsaw-message');
 
+
+    // --- 更新後的遊戲關卡設定 (GAME_LEVELS) ---
     const GAME_LEVELS = [
-        { id: 1, name: "第一關", imagePath: "assets/img/第一關拼圖.jpg", puzzlePiecesCount: 9, puzzleRows: 3, puzzleCols: 3, msGridSize: 10, msMines: 12, msMaxErrors: 3 },
-        { id: 2, name: "第二關", imagePath: "assets/img/第二關拼圖.jpg", puzzlePiecesCount: 16, puzzleRows: 4, puzzleCols: 4, msGridSize: 25, msMines: 100, msMaxErrors: 3 },
-        { id: 3, name: "第三關", imagePath: "assets/img/第三關拼圖.jpg", puzzlePiecesCount: 25, puzzleRows: 5, puzzleCols: 5, msGridSize: 50, msMines: 400, msMaxErrors: 3 },
+        { 
+            id: 1, name: "第一關", 
+            imagePath: "assets/img/第一關拼圖.jpg", 
+            puzzlePiecesCount: 9, puzzleRows: 3, puzzleCols: 3, 
+            msGridSize: 10, 
+            msMaxErrors: 3, 
+            subLevelsCount: 9, 
+            msDensityStart: 0.08, 
+            msDensityEnd: 0.13 
+        },
+        { 
+            id: 2, name: "第二關", 
+            imagePath: "assets/img/第二關拼圖.jpg", 
+            puzzlePiecesCount: 16, puzzleRows: 4, puzzleCols: 4, 
+            msGridSize: 15, 
+            msMaxErrors: 4, 
+            subLevelsCount: 16,
+            msDensityStart: 0.12, 
+            msDensityEnd: 0.16 
+        },
+        { 
+            id: 3, name: "第三關", 
+            imagePath: "assets/img/第三關拼圖.jpg", 
+            puzzlePiecesCount: 25, puzzleRows: 5, puzzleCols: 5, 
+            msGridSize: 20, 
+            msMaxErrors: 5, 
+            subLevelsCount: 25,
+            msDensityStart: 0.15, 
+            msDensityEnd: 0.18 
+        },
     ];
 
+    // --- 工具函數 ---
     function showScreen(screenId) {
         for (const id in screens) {
             if (screens[id]) { screens[id].classList.remove('active'); }
@@ -286,15 +318,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            for (let i = 1; i <= playerData.maxUnlockedLevel; i++) {
-                if (!playerData.levelProgress[i]) {
-                    playerData.levelProgress[i] = {
-                        isPuzzleComplete: false,
-                        ownedPieces: [], 
-                        placedPieces: {} 
-                    };
+            GAME_LEVELS.forEach(mainLevel => {
+                if (mainLevel.id <= playerData.maxUnlockedLevel) {
+                    if (!playerData.levelProgress[mainLevel.id]) {
+                        playerData.levelProgress[mainLevel.id] = {
+                            isPuzzleComplete: false,
+                            ownedPieces: [], 
+                            placedPieces: {},
+                            completedSubLevels: 0 
+                        };
+                    } else if (typeof playerData.levelProgress[mainLevel.id].completedSubLevels === 'undefined') {
+                        playerData.levelProgress[mainLevel.id].completedSubLevels = 0; 
+                    }
                 }
-            }
+            });
+
         } catch (error) {
             console.error("載入玩家數據錯誤:", error);
             alert("無法載入您的遊戲進度，請嘗試重新整理。");
@@ -322,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentUser || !playerData.levelProgress[levelIdToSave]) return;
         try {
             const progressUpdate = {};
-            progressUpdate[`levelProgress.${levelIdToSave}`] = playerData.levelProgress[levelIdToSave];
+            progressUpdate[`levelProgress.${levelIdToSave}`] = playerData.levelProgress[levelIdToSave]; 
             
             await db.collection('playerData').doc(currentUser.uid).update(progressUpdate);
         } catch (error) {
@@ -331,34 +369,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- Minesweeper Game (踩地雷遊戲邏輯) ---
-    function createMinesweeperGame(levelCfg) {
-        if (!levelCfg || typeof levelCfg.msGridSize !== 'number' || typeof levelCfg.msMines !== 'number' || typeof levelCfg.msMaxErrors !== 'number') {
-            console.error("[Minesweeper] 無效的關卡設定:", levelCfg);
+    function getSubLevelMineCount(mainLevelCfg, subLevelIdx) {
+        if (!mainLevelCfg || !mainLevelCfg.subLevelsCount || subLevelIdx < 0 || subLevelIdx >= mainLevelCfg.subLevelsCount) {
+            return mainLevelCfg.msMines || 10; 
+        }
+        const { msGridSize, subLevelsCount, msDensityStart, msDensityEnd } = mainLevelCfg;
+        let currentDensity;
+        if (subLevelsCount <= 1) {
+            currentDensity = msDensityStart; 
+        } else {
+            currentDensity = msDensityStart + (msDensityEnd - msDensityStart) * (subLevelIdx / (subLevelsCount - 1));
+        }
+        const mineCount = Math.floor(msGridSize * msGridSize * currentDensity);
+        return Math.max(1, mineCount); 
+    }
+
+    function createMinesweeperGame(mainLevelCfg, subLevelIdx) { 
+        const gridSize = mainLevelCfg.msGridSize;
+        const numMines = getSubLevelMineCount(mainLevelCfg, subLevelIdx);
+        const maxErrorsAllowed = mainLevelCfg.msMaxErrors;
+
+        console.log(`[Minesweeper] 創建小關卡 ${subLevelIdx + 1} (主關卡 ${mainLevelCfg.id}): 格子 ${gridSize}x${gridSize}, 地雷 ${numMines}, 容錯 ${maxErrorsAllowed}`);
+
+        if (typeof gridSize !== 'number' || typeof numMines !== 'number' || typeof maxErrorsAllowed !== 'number') {
+            console.error("[Minesweeper] 無效的關卡設定:", {gridSize, numMines, maxErrorsAllowed});
             alert("無法建立踩地雷遊戲：關卡設定錯誤。");
             return null; 
         }
         const board = [];
-        const { msGridSize: size, msMines: numMines, msMaxErrors: maxErrorsAllowed } = levelCfg;
-        let minesToPlace = numMines;
-        
-        for (let r = 0; r < size; r++) {
+        for (let r = 0; r < gridSize; r++) {
             board[r] = [];
-            for (let c = 0; c < size; c++) {
+            for (let c = 0; c < gridSize; c++) {
                 board[r][c] = { r, c, isMine: false, isRevealed: false, isFlagged: false, adjacentMines: 0 };
             }
         }
 
-        while (minesToPlace > 0) {
-            const r = Math.floor(Math.random() * size);
-            const c = Math.floor(Math.random() * size);
+        let minesToPlace = numMines;
+        while (minesToPlace > 0 && minesToPlace < gridSize * gridSize) { 
+            const r = Math.floor(Math.random() * gridSize);
+            const c = Math.floor(Math.random() * gridSize);
             if (!board[r][c].isMine) {
                 board[r][c].isMine = true;
                 minesToPlace--;
             }
         }
+        if (minesToPlace > 0) console.warn(`[Minesweeper] 未能放置所有地雷，剩餘 ${minesToPlace}。可能是地雷數接近格子總數。`);
 
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
+
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
                 if (board[r][c].isMine) continue;
                 let count = 0;
                 for (let dr = -1; dr <= 1; dr++) {
@@ -366,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (dr === 0 && dc === 0) continue;
                         const nr = r + dr;
                         const nc = c + dc;
-                        if (nr >= 0 && nr < size && nc >= 0 && nc < size && board[nr][nc].isMine) {
+                        if (nr >= 0 && nr < gridSize && nc >= 0 && nc < gridSize && board[nr][nc].isMine) {
                             count++;
                         }
                     }
@@ -374,9 +433,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 board[r][c].adjacentMines = count;
             }
         }
+        
         return {
             board,
-            size,
+            size: gridSize, 
             numMines,
             maxErrorsAllowed,
             revealedCount: 0,
@@ -393,14 +453,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let scrollY = 0;
-        let gridContainerTopBeforeRender = 0;
-        // 只有在 minesweeperGridContainer 存在且可見時才獲取其位置
-        if (minesweeperGridContainer && minesweeperGridContainer.offsetParent !== null) {
-            scrollY = window.pageYOffset || document.documentElement.scrollTop;
-            gridContainerTopBeforeRender = minesweeperGridContainer.getBoundingClientRect().top;
-        }
+        let scrollYBeforeRender = 0;
+        let minesweeperGridRectBeforeRender = null;
 
+        if (minesweeperGridElement && minesweeperGridElement.offsetParent !== null) { 
+            scrollYBeforeRender = window.pageYOffset || document.documentElement.scrollTop;
+            minesweeperGridRectBeforeRender = minesweeperGridElement.getBoundingClientRect();
+        }
 
         const game = currentMinesweeperGame;
         if (!minesweeperGridElement || !minesweeperGridContainer) {
@@ -414,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let cellSize = Math.floor(containerWidth / game.size) - 2; 
         cellSize = Math.max(10, Math.min(cellSize, 30)); 
 
-        if (containerWidth === 0 && game.size > 0) { // 只有在確定會有格子時才警告
+        if (containerWidth === 0 && game.size > 0) { 
             console.warn("[Minesweeper] 容器寬度為 0，格子可能無法正確渲染。請確保畫面在渲染前已可見。");
         }
 
@@ -445,66 +504,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         updateMinesweeperInfo();
         
-        requestAnimationFrame(() => {
-            if (minesweeperGridContainer && minesweeperGridContainer.offsetParent !== null) {
-                const gridContainerTopAfterRender = minesweeperGridContainer.getBoundingClientRect().top;
-                const scrollDiff = gridContainerTopAfterRender - gridContainerTopBeforeRender;
-                window.scrollBy(0, scrollDiff);
-            } else {
-                 // Fallback if container was not visible or became invisible
-                window.scrollTo(0, scrollY);
-            }
-        });
+        if (minesweeperGridRectBeforeRender) {
+            requestAnimationFrame(() => {
+                if (minesweeperGridElement && minesweeperGridElement.offsetParent !== null) {
+                    const minesweeperGridRectAfterRender = minesweeperGridElement.getBoundingClientRect();
+                    const diffY = minesweeperGridRectAfterRender.top - minesweeperGridRectBeforeRender.top;
+                    window.scrollBy(0, diffY);
+                } else {
+                    window.scrollTo(0, scrollYBeforeRender);
+                }
+            });
+        }
     }
     
-    function revealMinesweeperCell(r, c, isChording = false) { // 新增 isChording 參數
+    function revealMinesweeperCell(r, c, isChordingTrigger = false) { 
         if (!currentMinesweeperGame || currentMinesweeperGame.gameOver) return;
         const game = currentMinesweeperGame;
         const cell = game.board[r][c];
 
-        // 如果是 Chording 觸發的，且格子已插旗，則不翻開 (安全 Chording)
-        if (isChording && cell.isFlagged) return;
-
-        // 如果格子已翻開 (不是 Chording 觸發的點擊)
-        if (cell.isRevealed && !isChording) {
-            if (cell.adjacentMines > 0) { // 只有數字格才能觸發 Chording
-                let flaggedNeighbors = 0;
-                for (let dr = -1; dr <= 1; dr++) {
-                    for (let dc = -1; dc <= 1; dc++) {
-                        if (dr === 0 && dc === 0) continue;
-                        const nr = r + dr;
-                        const nc = c + dc;
-                        if (nr >= 0 && nr < game.size && nc >= 0 && nc < game.size && game.board[nr][nc].isFlagged) {
+        if (cell.isRevealed && !isChordingTrigger && cell.adjacentMines > 0) {
+            let flaggedNeighbors = 0;
+            const neighborsToReveal = [];
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    if (dr === 0 && dc === 0) continue;
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (nr >= 0 && nr < game.size && nc >= 0 && nc < game.size) {
+                        if (game.board[nr][nc].isFlagged) {
                             flaggedNeighbors++;
-                        }
-                    }
-                }
-
-                if (flaggedNeighbors === cell.adjacentMines) {
-                    // 執行 Chording：翻開周圍未插旗且未翻開的格子
-                    for (let dr = -1; dr <= 1; dr++) {
-                        for (let dc = -1; dc <= 1; dc++) {
-                            if (dr === 0 && dc === 0) continue;
-                            const nr = r + dr;
-                            const nc = c + dc;
-                            if (nr >= 0 && nr < game.size && nc >= 0 && nc < game.size) {
-                                // 對未翻開且未插旗的鄰居遞迴呼叫，標記為 isChording
-                                if (!game.board[nr][nc].isRevealed && !game.board[nr][nc].isFlagged) {
-                                    revealMinesweeperCell(nr, nc, true);
-                                }
-                            }
+                        } else if (!game.board[nr][nc].isRevealed) {
+                            neighborsToReveal.push({r: nr, c: nc});
                         }
                     }
                 }
             }
-            // 如果是已翻開的格子被點擊（無論是否觸發Chording），都不再執行後續的翻開邏輯
-            // 但需要重新渲染以反映可能的Chording結果
-            if (!isChording) renderMinesweeperBoard(); // 只有在非遞迴的Chording主調用後才渲染
+
+            if (flaggedNeighbors === cell.adjacentMines) {
+                neighborsToReveal.forEach(n => revealMinesweeperCell(n.r, n.c, true)); 
+            }
+            // Chording 操作後，如果沒有進一步的遞迴，則需要渲染和檢查勝利
+            if (!isChordingTrigger && neighborsToReveal.length > 0) {
+                 renderMinesweeperBoard();
+                 if (!game.gameOver) checkMinesweeperWinCondition();
+            }
             return; 
         }
         
-        // 以下是正常的翻開邏輯 (針對未翻開的格子)
-        if (cell.isRevealed || cell.isFlagged) return; // 再次檢查，以防 Chording 遞迴時狀態改變
+        if (cell.isRevealed || cell.isFlagged) return; 
 
         cell.isRevealed = true;
         game.revealedCount++;
@@ -525,14 +572,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         const nr = r + dr;
                         const nc = c + dc;
                         if (nr >= 0 && nr < game.size && nc >= 0 && nc < game.size) {
-                            revealMinesweeperCell(nr, nc, true); // 空白格展開時也視為 Chording 的一部分
+                            if (!game.board[nr][nc].isRevealed && !game.board[nr][nc].isFlagged) { 
+                                revealMinesweeperCell(nr, nc, true); 
+                            }
                         }
                     }
                 }
             }
         }
-        // 只有在非遞迴的Chording主調用，或者不是由空白格展開觸發的遞迴調用後才渲染和檢查勝利
-        if (!isChording) { 
+        if (!isChordingTrigger) { 
             renderMinesweeperBoard(); 
             if (!game.gameOver) checkMinesweeperWinCondition(); 
         }
@@ -588,41 +636,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function awardPuzzlePiece() {
-        if (!currentLevelConfig || !playerData.levelProgress[currentLevelId]) {
-            console.warn("無法獎勵拼圖：關卡設定或進度未載入。");
+        if (!currentMainLevelConfig || !playerData.levelProgress[currentMainLevelId]) {
+            console.warn("無法獎勵拼圖：主關卡設定或進度未載入。");
             return;
         }
         
-        const levelProgress = playerData.levelProgress[currentLevelId];
-        const allPieceIdsCurrentLevel = [];
-        for (let r = 0; r < currentLevelConfig.puzzleRows; r++) {
-            for (let c = 0; c < currentLevelConfig.puzzleCols; c++) {
-                allPieceIdsCurrentLevel.push(`piece_r${r}c${c}`);
+        const mainLevelProgress = playerData.levelProgress[currentMainLevelId];
+        
+        if (mainLevelProgress.ownedPieces.length < currentMainLevelConfig.puzzlePiecesCount) {
+            const allPieceIdsForMainLevel = [];
+            for (let r = 0; r < currentMainLevelConfig.puzzleRows; r++) {
+                for (let c = 0; c < currentMainLevelConfig.puzzleCols; c++) {
+                    allPieceIdsForMainLevel.push(`piece_r${r}c${c}`);
+                }
             }
-        }
+            const unownedPieceIds = allPieceIdsForMainLevel.filter(id => !mainLevelProgress.ownedPieces.includes(id));
 
-        const unownedPieceIds = allPieceIdsCurrentLevel.filter(id => !levelProgress.ownedPieces.includes(id));
-
-        if (unownedPieceIds.length > 0) {
-            const randomIndex = Math.floor(Math.random() * unownedPieceIds.length);
-            const newPieceId = unownedPieceIds[randomIndex];
-            levelProgress.ownedPieces.push(newPieceId);
-            saveLevelProgress(currentLevelId); 
-            console.log("獎勵拼圖碎片:", newPieceId);
-            setTimeout(() => alert(`恭喜！獲得拼圖碎片！`), 100); 
+            if (unownedPieceIds.length > 0) {
+                const randomIndex = Math.floor(Math.random() * unownedPieceIds.length);
+                const newPieceId = unownedPieceIds[randomIndex];
+                mainLevelProgress.ownedPieces.push(newPieceId);
+                console.log(`獎勵拼圖碎片: ${newPieceId} (主關卡 ${currentMainLevelId})`);
+                setTimeout(() => alert(`恭喜！獲得一個新的拼圖碎片！`), 100);
+            } else {
+                console.log(`主關卡 ${currentMainLevelId} 的所有拼圖碎片均已擁有。`);
+                setTimeout(() => alert("您已擁有此主關卡的所有拼圖碎片！"), 100);
+            }
         } else {
-            console.log("此關卡所有拼圖碎片均已擁有。");
-            setTimeout(() => alert("您已擁有此關卡所有拼圖碎片！"), 100);
+             console.log(`已擁有主關卡 ${currentMainLevelId} 的所有 ${currentMainLevelConfig.puzzlePiecesCount} 個碎片。`);
         }
-        updateLevelPuzzleProgressDisplay(); 
+
+        mainLevelProgress.completedSubLevels = (mainLevelProgress.completedSubLevels || 0) + 1;
+        saveLevelProgress(currentMainLevelId); 
+        updateInLevelScreen(); // 更新關卡內畫面的小關卡進度顯示
     }
+
 
     // --- Jigsaw Puzzle (拼圖遊戲邏輯) ---
     let draggedPieceElement = null; 
 
     async function setupJigsawPuzzle() {
-        if (!currentLevelConfig) {
-            console.error("無法設定拼圖：currentLevelConfig 未定義。");
+        if (!currentMainLevelConfig) { 
+            console.error("無法設定拼圖：currentMainLevelConfig 未定義。");
             return;
         }
         currentJigsawState = { image: null, pieces: [], slots: [], ownedPieceIds: [], placedPieceMap: {} }; 
@@ -630,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(jigsawPiecesContainer) jigsawPiecesContainer.innerHTML = '';
         if(jigsawMessage) jigsawMessage.textContent = '';
 
-        const levelProgress = playerData.levelProgress[currentLevelId];
+        const levelProgress = playerData.levelProgress[currentMainLevelId]; 
         if (!levelProgress) {
             if(jigsawMessage) jigsawMessage.textContent = "無法載入拼圖進度。";
             return;
@@ -639,26 +694,26 @@ document.addEventListener('DOMContentLoaded', () => {
         currentJigsawState.placedPieceMap = {...levelProgress.placedPieces}; 
 
         const img = new Image();
-        img.src = currentLevelConfig.imagePath;
+        img.src = currentMainLevelConfig.imagePath; 
         
         showLoading(true);
         img.onload = () => {
             currentJigsawState.image = img;
-            const naturalPieceWidth = img.naturalWidth / currentLevelConfig.puzzleCols;
-            const naturalPieceHeight = img.naturalHeight / currentLevelConfig.puzzleRows;
+            const naturalPieceWidth = img.naturalWidth / currentMainLevelConfig.puzzleCols; 
+            const naturalPieceHeight = img.naturalHeight / currentMainLevelConfig.puzzleRows; 
             
             const frameContainerMaxWidth = Math.min(450, window.innerWidth * 0.8); 
             const scale = frameContainerMaxWidth / img.naturalWidth;
             const displayPieceWidth = naturalPieceWidth * scale;
             const displayPieceHeight = naturalPieceHeight * scale;
 
-            jigsawFrameContainer.style.gridTemplateColumns = `repeat(${currentLevelConfig.puzzleCols}, ${displayPieceWidth}px)`;
-            jigsawFrameContainer.style.gridTemplateRows = `repeat(${currentLevelConfig.puzzleRows}, ${displayPieceHeight}px)`;
-            jigsawFrameContainer.style.width = `${currentLevelConfig.puzzleCols * displayPieceWidth}px`;
-            jigsawFrameContainer.style.height = `${currentLevelConfig.puzzleRows * displayPieceHeight}px`;
+            jigsawFrameContainer.style.gridTemplateColumns = `repeat(${currentMainLevelConfig.puzzleCols}, ${displayPieceWidth}px)`; 
+            jigsawFrameContainer.style.gridTemplateRows = `repeat(${currentMainLevelConfig.puzzleRows}, ${displayPieceHeight}px)`; 
+            jigsawFrameContainer.style.width = `${currentMainLevelConfig.puzzleCols * displayPieceWidth}px`; 
+            jigsawFrameContainer.style.height = `${currentMainLevelConfig.puzzleRows * displayPieceHeight}px`; 
 
-            for (let r = 0; r < currentLevelConfig.puzzleRows; r++) {
-                for (let c = 0; c < currentLevelConfig.puzzleCols; c++) {
+            for (let r = 0; r < currentMainLevelConfig.puzzleRows; r++) { 
+                for (let c = 0; c < currentMainLevelConfig.puzzleCols; c++) { 
                     const pieceId = `piece_r${r}c${c}`;
                     const slotId = `slot_r${r}c${c}`;
                     
@@ -715,8 +770,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoading(false);
         };
         img.onerror = () => {
-            if(jigsawMessage) jigsawMessage.textContent = "無法載入拼圖圖片: " + currentLevelConfig.imagePath;
-            console.error("拼圖圖片載入失敗:", currentLevelConfig.imagePath);
+            if(jigsawMessage) jigsawMessage.textContent = "無法載入拼圖圖片: " + currentMainLevelConfig.imagePath; 
+            console.error("拼圖圖片載入失敗:", currentMainLevelConfig.imagePath); 
             showLoading(false);
         };
     }
@@ -758,8 +813,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const pieceState = currentJigsawState.pieces.find(p => p.id === pieceId);
             if (pieceState) pieceState.isPlaced = true;
             
-            playerData.levelProgress[currentLevelId].placedPieces[pieceId] = slotId;
-            saveLevelProgress(currentLevelId);
+            playerData.levelProgress[currentMainLevelId].placedPieces[pieceId] = slotId; 
+            saveLevelProgress(currentMainLevelId); 
             
             checkJigsawWin();
         } else {
@@ -791,29 +846,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkJigsawWin() {
-        if (!currentLevelConfig || !playerData.levelProgress[currentLevelId]) return;
+        if (!currentMainLevelConfig || !playerData.levelProgress[currentMainLevelId]) return; 
 
-        const totalPiecesForLevel = currentLevelConfig.puzzlePiecesCount;
+        const totalPiecesForLevel = currentMainLevelConfig.puzzlePiecesCount; 
         const placedCount = Object.keys(currentJigsawState.placedPieceMap).length;
         
         updateLevelPuzzleProgressDisplay(); 
 
         if (placedCount === totalPiecesForLevel && totalPiecesForLevel > 0) { 
-            if(jigsawMessage) jigsawMessage.textContent = `恭喜！${currentLevelConfig.name} 拼圖完成！`;
-            playerData.levelProgress[currentLevelId].isPuzzleComplete = true;
+            if(jigsawMessage) jigsawMessage.textContent = `恭喜！${currentMainLevelConfig.name} 拼圖完成！`; 
+            playerData.levelProgress[currentMainLevelId].isPuzzleComplete = true; 
             
-            if (currentLevelId < GAME_LEVELS.length && currentLevelId >= playerData.maxUnlockedLevel) {
-                playerData.maxUnlockedLevel = currentLevelId + 1;
+            if (currentMainLevelId < GAME_LEVELS.length && currentMainLevelId >= playerData.maxUnlockedLevel) {
+                playerData.maxUnlockedLevel = currentMainLevelId + 1;
                 savePlayerGlobalData(); 
                 populateLevelSelectScreen(); 
             }
-            saveLevelProgress(currentLevelId); 
-            alert(`${currentLevelConfig.name} 拼圖已完成！`);
+            saveLevelProgress(currentMainLevelId); 
+            alert(`${currentMainLevelConfig.name} 拼圖已完成！`); 
         }
     }
 
 
     // --- Main Application Logic (主應用程式邏輯與事件監聽) ---
+    let pressTimer = null;
+    let isLongPress = false;
+    const LONG_PRESS_DURATION = 500; 
+
     function initializeUI() {
         const showRegisterLink = document.getElementById('show-register-link');
         const showLoginLink = document.getElementById('show-login-link');
@@ -907,21 +966,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (minesweeperBackButton) {
             minesweeperBackButton.addEventListener('click', () => {
                 currentMinesweeperGame = null; 
-                updateLevelPuzzleProgressDisplay(); 
+                updateInLevelScreen(); // 返回時更新小關卡進度顯示
                 showScreen('inLevel');
             });
         }
         const jigsawBackButton = document.getElementById('jigsaw-back-button');
         if (jigsawBackButton) {
             jigsawBackButton.addEventListener('click', () => {
-                updateLevelPuzzleProgressDisplay(); 
+                updateInLevelScreen(); 
                 showScreen('inLevel');
             });
         }
         
-        const playMinesweeperButton = document.getElementById('play-minesweeper-button');
         if (playMinesweeperButton) {
-            playMinesweeperButton.addEventListener('click', startMinesweeperGame);
+            playMinesweeperButton.addEventListener('click', startNextMinesweeperSubLevel); 
         }
         const playJigsawButton = document.getElementById('play-jigsaw-button');
         if (playJigsawButton) {
@@ -930,14 +988,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (minesweeperGridElement) {
             minesweeperGridElement.addEventListener('click', (e) => {
+                if (isLongPress) { 
+                    isLongPress = false; 
+                    return;
+                }
                 if (!currentMinesweeperGame || currentMinesweeperGame.gameOver) return;
                 const cellEl = e.target.closest('.ms-cell');
                 if (cellEl) {
                     const r = parseInt(cellEl.dataset.r);
                     const c = parseInt(cellEl.dataset.c);
-                    revealMinesweeperCell(r, c); // isChording 預設為 false
+                    revealMinesweeperCell(r, c); 
                 }
             });
+
             minesweeperGridElement.addEventListener('contextmenu', (e) => {
                 e.preventDefault(); 
                 if (!currentMinesweeperGame || currentMinesweeperGame.gameOver) return;
@@ -947,6 +1010,48 @@ document.addEventListener('DOMContentLoaded', () => {
                     const c = parseInt(cellEl.dataset.c);
                     toggleMinesweeperFlag(r, c);
                 }
+            });
+
+            minesweeperGridElement.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return; 
+                const cellEl = e.target.closest('.ms-cell');
+                if (cellEl && currentMinesweeperGame && !currentMinesweeperGame.gameOver) {
+                    isLongPress = false; 
+                    pressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        const r = parseInt(cellEl.dataset.r);
+                        const c = parseInt(cellEl.dataset.c);
+                        toggleMinesweeperFlag(r, c);
+                    }, LONG_PRESS_DURATION);
+                }
+            });
+            minesweeperGridElement.addEventListener('mouseup', () => {
+                clearTimeout(pressTimer);
+            });
+            minesweeperGridElement.addEventListener('mouseleave', () => { 
+                clearTimeout(pressTimer);
+            });
+
+            minesweeperGridElement.addEventListener('touchstart', (e) => {
+                const cellEl = e.target.closest('.ms-cell');
+                if (cellEl && currentMinesweeperGame && !currentMinesweeperGame.gameOver) {
+                    isLongPress = false;
+                    pressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        const r = parseInt(cellEl.dataset.r);
+                        const c = parseInt(cellEl.dataset.c);
+                        toggleMinesweeperFlag(r, c);
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    }, LONG_PRESS_DURATION);
+                }
+            }, { passive: true }); 
+
+            minesweeperGridElement.addEventListener('touchend', () => {
+                clearTimeout(pressTimer);
+            });
+            minesweeperGridElement.addEventListener('touchmove', () => { 
+                clearTimeout(pressTimer);
+                isLongPress = false; 
             });
         }
         
@@ -975,56 +1080,84 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 button.title = `開始 ${level.name}`;
             }
-            button.addEventListener('click', () => loadLevel(level.id));
+            button.addEventListener('click', () => loadMainLevel(level.id)); 
             levelSelectButtonsContainer.appendChild(button);
         });
     }
 
-    function loadLevel(levelIdToLoad) {
-        currentLevelId = levelIdToLoad;
-        currentLevelConfig = GAME_LEVELS.find(l => l.id === levelIdToLoad);
-        if (!currentLevelConfig) {
-            console.error("關卡設定未找到:", levelIdToLoad);
+    function loadMainLevel(mainLevelIdToLoad) {
+        currentMainLevelId = mainLevelIdToLoad;
+        currentMainLevelConfig = GAME_LEVELS.find(l => l.id === mainLevelIdToLoad);
+        if (!currentMainLevelConfig) {
+            console.error("主關卡設定未找到:", mainLevelIdToLoad);
             alert("無法載入關卡，請重試。");
             showScreen('levelSelect'); 
             return;
         }
-        if(currentLevelTitle) currentLevelTitle.textContent = `${currentLevelConfig.name}`;
-        updateLevelPuzzleProgressDisplay();
+        const progress = playerData.levelProgress[currentMainLevelId];
+        currentSubLevelIndex = progress ? (progress.completedSubLevels || 0) : 0;
+
+        if(currentLevelTitle) currentLevelTitle.textContent = `${currentMainLevelConfig.name}`;
+        updateInLevelScreen(); 
         showScreen('inLevel');
     }
+    
+    function updateInLevelScreen() {
+        if (!currentMainLevelConfig || !playerData.levelProgress[currentMainLevelId] || !playMinesweeperButton) return;
+        
+        const mainLevelProgress = playerData.levelProgress[currentMainLevelId];
+        currentSubLevelIndex = mainLevelProgress.completedSubLevels || 0; 
+
+        if (currentSubLevelIndex >= currentMainLevelConfig.subLevelsCount) {
+            playMinesweeperButton.textContent = "所有小關卡已完成！";
+            playMinesweeperButton.disabled = true;
+        } else {
+            playMinesweeperButton.textContent = `開始踩地雷 (小關卡 ${currentSubLevelIndex + 1} / ${currentMainLevelConfig.subLevelsCount})`;
+            playMinesweeperButton.disabled = false;
+        }
+        updateLevelPuzzleProgressDisplay(); 
+    }
+
 
     function updateLevelPuzzleProgressDisplay() {
-        if (!currentLevelConfig || !playerData.levelProgress[currentLevelId] || !levelPuzzleProgressDisplay) {
+        if (!currentMainLevelConfig || !playerData.levelProgress[currentMainLevelId] || !levelPuzzleProgressDisplay) {
             if (levelPuzzleProgressDisplay) levelPuzzleProgressDisplay.textContent = "拼圖進度: 數據錯誤";
             return;
         }
-        const levelProgress = playerData.levelProgress[currentLevelId];
-        const totalPieces = currentLevelConfig.puzzlePiecesCount;
-        const ownedCount = levelProgress.ownedPieces.length;
-        const placedCount = Object.keys(levelProgress.placedPieces).length;
+        const mainLevelProgress = playerData.levelProgress[currentMainLevelId];
+        const totalPieces = currentMainLevelConfig.puzzlePiecesCount;
+        const ownedCount = mainLevelProgress.ownedPieces.length;
+        const placedCount = Object.keys(mainLevelProgress.placedPieces).length;
         
-        let progressText = `拼圖進度: ${placedCount} / ${ownedCount} (已擁有), 共 ${totalPieces} 塊`;
-        if (levelProgress.isPuzzleComplete) {
-            progressText += " - 👍 已完成！";
+        let progressText = `拼圖: ${placedCount} / ${ownedCount} (已擁有), 共 ${totalPieces} 塊。`;
+        progressText += ` 小關卡進度: ${mainLevelProgress.completedSubLevels} / ${currentMainLevelConfig.subLevelsCount}`;
+
+        if (mainLevelProgress.isPuzzleComplete) {
+            progressText += " - 👍 拼圖已完成！";
         }
         levelPuzzleProgressDisplay.textContent = progressText;
     }
 
 
-    function startMinesweeperGame() {
-        if (!currentLevelConfig) {
-            console.error("[Main] 無法開始踩地雷：currentLevelConfig 未定義。");
-            alert("請先選擇一個關卡。");
+    function startNextMinesweeperSubLevel() {
+        if (!currentMainLevelConfig) {
+            console.error("[Main] 無法開始踩地雷：主關卡設定未定義。");
+            alert("請先選擇一個主關卡。");
             return;
         }
+        if (currentSubLevelIndex >= currentMainLevelConfig.subLevelsCount) {
+            alert("此主關卡的所有小關卡都已完成！");
+            updateInLevelScreen(); // 確保按鈕狀態更新
+            return;
+        }
+
         if (minesweeperMessage) minesweeperMessage.textContent = ''; 
         const msTitleElement = document.getElementById('minesweeper-level-title');
         if (msTitleElement) {
-            msTitleElement.textContent = `踩地雷 - ${currentLevelConfig.name}`;
+            msTitleElement.textContent = `踩地雷 - ${currentMainLevelConfig.name} (小關卡 ${currentSubLevelIndex + 1})`;
         }
         
-        currentMinesweeperGame = createMinesweeperGame(currentLevelConfig);
+        currentMinesweeperGame = createMinesweeperGame(currentMainLevelConfig, currentSubLevelIndex); 
         if (!currentMinesweeperGame) { 
             console.error("[Main] 踩地雷遊戲物件創建失敗。");
             return;
@@ -1037,69 +1170,72 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function startJigsawGame() {
-        if (!currentLevelConfig) {
-            console.error("無法開始拼圖：currentLevelConfig 未定義。");
-            alert("請先選擇一個關卡。");
+        if (!currentMainLevelConfig) {
+            console.error("無法開始拼圖：currentMainLevelConfig 未定義。");
+            alert("請先選擇一個主關卡。");
             return;
         }
         const jigsawTitleElement = document.getElementById('jigsaw-level-title');
         if (jigsawTitleElement) {
-            jigsawTitleElement.textContent = `拼圖 - ${currentLevelConfig.name}`;
+            jigsawTitleElement.textContent = `拼圖 - ${currentMainLevelConfig.name}`;
         }
         setupJigsawPuzzle(); 
         showScreen('jigsaw');
     }
 
-    // --- Firebase Auth State Change Listener (更新後) ---
-    auth.onAuthStateChanged(async (user) => {
-        showLoading(true);
-        if (user) {
-            currentUser = user;
-            await loadPlayerData(user.uid, user.isAnonymous, user); 
-            
-            if (usernameDisplay) usernameDisplay.textContent = playerData.username; 
-            if (userInfoContainer) userInfoContainer.style.display = 'flex';
-            if (logoutButton) logoutButton.style.display = 'inline-block';
-            
-            populateLevelSelectScreen(); 
-            showScreen('levelSelect'); 
-            
-            if (loginForm && typeof loginForm.reset === 'function') {
-                loginForm.reset();
-            } else if (loginForm) { 
-                if (loginEmailInput) loginEmailInput.value = ''; 
-                if (loginPasswordInput) loginPasswordInput.value = '';
+    // --- Firebase Auth State Change Listener ---
+    if (auth) { 
+        auth.onAuthStateChanged(async (user) => {
+            showLoading(true);
+            if (user) {
+                currentUser = user;
+                await loadPlayerData(user.uid, user.isAnonymous, user); 
+                
+                if (usernameDisplay) usernameDisplay.textContent = playerData.username; 
+                if (userInfoContainer) userInfoContainer.style.display = 'flex';
+                if (logoutButton) logoutButton.style.display = 'inline-block';
+                
+                populateLevelSelectScreen(); 
+                showScreen('levelSelect'); 
+                
+                if (loginForm && typeof loginForm.reset === 'function') { loginForm.reset(); } 
+                else if (loginForm) { 
+                    if (loginEmailInput) loginEmailInput.value = ''; 
+                    if (loginPasswordInput) loginPasswordInput.value = '';
+                }
+                if (registerForm && typeof registerForm.reset === 'function') { registerForm.reset(); } 
+                else if (registerForm) { 
+                    if (registerEmailInput) registerEmailInput.value = ''; 
+                    if (registerPasswordInput) registerPasswordInput.value = '';
+                    if (registerConfirmPasswordInput) registerConfirmPasswordInput.value = '';
+                }
+                if (forgotPasswordSection && forgotPasswordSection.style.display !== 'none') {
+                    if (resetEmailInput) resetEmailInput.value = '';
+                    if (resetInfoMessage) resetInfoMessage.textContent = '';
+                    forgotPasswordSection.style.display = 'none'; 
+                }
+                if (loginErrorMsg) loginErrorMsg.textContent = '';
+                if (registerErrorMsg) registerErrorMsg.textContent = '';
+
+            } else {
+                currentUser = null;
+                playerData = { username: '', maxUnlockedLevel: 1, levelProgress: {} }; 
+                if (userInfoContainer) userInfoContainer.style.display = 'none';
+                if (logoutButton) logoutButton.style.display = 'none';
+                if (forgotPasswordSection) forgotPasswordSection.style.display = 'none';
+                if (loginForm) loginForm.style.display = 'block'; 
+                if (registerForm) registerForm.style.display = 'none';
+                showScreen('auth'); 
             }
-
-            if (registerForm && typeof registerForm.reset === 'function') {
-                registerForm.reset();
-            } else if (registerForm) { 
-                if (registerEmailInput) registerEmailInput.value = ''; 
-                if (registerPasswordInput) registerPasswordInput.value = '';
-                if (registerConfirmPasswordInput) registerConfirmPasswordInput.value = '';
-            }
-            if (forgotPasswordSection && forgotPasswordSection.style.display !== 'none') {
-                if (resetEmailInput) resetEmailInput.value = '';
-                if (resetInfoMessage) resetInfoMessage.textContent = '';
-                forgotPasswordSection.style.display = 'none'; 
-            }
-
-
-            if (loginErrorMsg) loginErrorMsg.textContent = '';
-            if (registerErrorMsg) registerErrorMsg.textContent = '';
-
-        } else {
-            currentUser = null;
-            playerData = { username: '', maxUnlockedLevel: 1, levelProgress: {} }; 
-            if (userInfoContainer) userInfoContainer.style.display = 'none';
-            if (logoutButton) logoutButton.style.display = 'none';
-            if (forgotPasswordSection) forgotPasswordSection.style.display = 'none';
-            if (loginForm) loginForm.style.display = 'block'; 
-            if (registerForm) registerForm.style.display = 'none';
-            showScreen('auth'); 
-        }
+            showLoading(false);
+        });
+    } else {
+        console.error("Auth 物件未初始化，無法設定 onAuthStateChanged 監聽器。");
+        alert("遊戲驗證服務啟動失敗，請刷新頁面或稍後再試。");
+        showScreen('auth'); 
         showLoading(false);
-    });
+    }
+
 
     // --- 初始化遊戲 ---
     initializeUI(); 
