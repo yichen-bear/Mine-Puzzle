@@ -82,28 +82,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const customAlertMessage = document.getElementById('custom-alert-message');
     const customAlertOkButton = document.getElementById('custom-alert-ok');
 
-    // 新增：通關祝賀圖片 Modal 的元素參照
-    // 請確保您在 index.html 中有對應的 HTML 結構
-    // 例如：
-    // <div id="completion-image-modal" class="modal-overlay">
-    //   <div class="modal-content" style="text-align: center;">
-    //     <img id="completion-image-display" src="" alt="恭喜通關!" style="max-width: 100%; max-height: 80vh; margin-bottom: 15px; border-radius: 8px;">
-    //     <div class="modal-buttons">
-    //       <button id="completion-image-ok-button" class="modal-button-confirm">太棒了！</button>
-    //     </div>
-    //   </div>
-    // </div>
-    const completionImageModal = document.getElementById('completion-image-modal');
+    const completionImageModal = document.getElementById('completion-image-modal'); 
     const completionImageDisplay = document.getElementById('completion-image-display');
     const completionImageOkButton = document.getElementById('completion-image-ok-button');
+
+    const imageToggleModal = document.getElementById('image-toggle-modal');
+    const toggleImageDisplay = document.getElementById('toggle-image-display');
+    const toggleImageCaption = document.getElementById('toggle-image-caption'); 
+    const toggleImagePrevButton = document.getElementById('toggle-image-prev');
+    const toggleImageNextButton = document.getElementById('toggle-image-next');
+    const toggleImageCloseButton = document.getElementById('toggle-image-close-button');
 
 
     // --- 遊戲關卡設定 (GAME_LEVELS) ---
     const GAME_LEVELS = [
         {
             id: 1, name: "第一關",
-            imagePath: "assets/img/第一關拼圖.jpg",
-            completionImagePath: "assets/img/good1.png", // 新增：通關圖片路徑
+            imagePath: "assets/img/第一關拼圖.jpg", 
+            completionImagePath: "assets/img/good1.png", 
             puzzlePiecesCount: 9, puzzleRows: 3, puzzleCols: 3,
             msGridSize: 10,
             msMaxErrors: 3,
@@ -114,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             id: 2, name: "第二關",
             imagePath: "assets/img/第二關拼圖.jpg",
-            completionImagePath: "assets/img/good2.png", // 新增：通關圖片路徑
+            completionImagePath: "assets/img/good2.png", 
             puzzlePiecesCount: 16, puzzleRows: 4, puzzleCols: 4,
             msGridSize: 15,
             msMaxErrors: 4,
@@ -125,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             id: 3, name: "第三關",
             imagePath: "assets/img/第三關拼圖.jpg",
-            completionImagePath: "assets/img/good3.png", // 新增：通關圖片路徑
+            completionImagePath: "assets/img/good3.png", 
             puzzlePiecesCount: 25, puzzleRows: 5, puzzleCols: 5,
             msGridSize: 20,
             msMaxErrors: 5,
@@ -155,7 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentReplayYesHandler = null;
     let currentReplayNoHandler = null;
     let currentCustomAlertOkHandler = null;
-    let currentCompletionImageOkHandler = null; // 新增：通關圖片 Modal 的處理函數
+    let currentCompletionImageOkHandler = null; 
+    let currentImageToggleCloseHandler = null; 
+    let currentImageTogglePrevHandler = null;
+    let currentImageToggleNextHandler = null;
+    let isShowingPuzzleInToggleModal = true; 
 
     function showReplayConfirmDialog(callback) {
         console.log('[showReplayConfirmDialog] replayConfirmModal:', replayConfirmModal, 'YesBtn:', replayConfirmYesButton, 'NoBtn:', replayConfirmNoButton);
@@ -216,8 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 新增：顯示通關祝賀圖片的 Modal 函數
-    function showCompletionImageModal(imagePath, callback) {
+    function showCompletionImageModal(imagePath, callback) { 
         console.log('[showCompletionImageModal] Image path:', imagePath);
         if (completionImageModal && completionImageDisplay && completionImageOkButton) {
             const modalButtonsContainer = completionImageModal.querySelector('.modal-buttons');
@@ -227,11 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             completionImageDisplay.src = imagePath;
-            completionImageDisplay.alt = "恭喜通關！"; // 設置圖片的替代文字
-            completionImageDisplay.onerror = () => { // 處理圖片載入失敗的情況
+            completionImageDisplay.alt = "恭喜通關！"; 
+            completionImageDisplay.onerror = () => { 
                 console.error("載入通關圖片失敗:", imagePath);
                 completionImageDisplay.alt = "圖片載入失敗"; 
-                // 可以選擇顯示一個預設的失敗訊息或圖標
             };
             completionImageModal.classList.add('active');
 
@@ -241,14 +239,89 @@ document.addEventListener('DOMContentLoaded', () => {
             
             currentCompletionImageOkHandler = () => {
                 completionImageModal.classList.remove('active');
-                completionImageDisplay.src = ""; // 清除圖片路徑，避免下次顯示舊圖
+                completionImageDisplay.src = ""; 
                 if (callback) callback();
             };
             completionImageOkButton.addEventListener('click', currentCompletionImageOkHandler);
         } else {
             console.error("通關圖片 Modal 的某些元素未找到!", completionImageModal, completionImageDisplay, completionImageOkButton);
-            // 如果 Modal 元素缺失，直接執行回呼，避免卡住流程
             if (callback) callback();
+        }
+    }
+
+    function showImageToggleModal(puzzleImagePath, badgeImagePath, callback) {
+        console.log('[showImageToggleModal] Puzzle Img:', puzzleImagePath, 'Badge Img:', badgeImagePath);
+        if (imageToggleModal && toggleImageDisplay && toggleImageCaption && toggleImagePrevButton && toggleImageNextButton && toggleImageCloseButton) {
+            
+            const modalButtonsContainer = imageToggleModal.querySelector('.modal-buttons'); 
+            if (toggleImageCloseButton.parentNode !== modalButtonsContainer && modalButtonsContainer) {
+                console.warn("[showImageToggleModal] Close button detached, re-appending.");
+                modalButtonsContainer.appendChild(toggleImageCloseButton);
+            }
+            const contentContainer = imageToggleModal.querySelector('.modal-content');
+            if (toggleImagePrevButton.parentNode !== contentContainer && contentContainer) {
+                 console.warn("[showImageToggleModal] Prev button detached, re-appending to content.");
+                 contentContainer.appendChild(toggleImagePrevButton); 
+            }
+             if (toggleImageNextButton.parentNode !== contentContainer && contentContainer) {
+                 console.warn("[showImageToggleModal] Next button detached, re-appending to content.");
+                 contentContainer.appendChild(toggleImageNextButton); 
+            }
+
+            isShowingPuzzleInToggleModal = true; 
+            toggleImageDisplay.src = puzzleImagePath;
+            toggleImageDisplay.alt = "已完成的拼圖";
+            toggleImageCaption.textContent = "完整拼圖 🧩"; 
+            toggleImageDisplay.onerror = () => { 
+                console.error("載入拼圖圖片失敗:", puzzleImagePath);
+                toggleImageDisplay.alt = "拼圖圖片載入失敗"; 
+                toggleImageCaption.textContent = "圖片載入失敗";
+            };
+
+            imageToggleModal.classList.add('active');
+
+            if (currentImageToggleCloseHandler) toggleImageCloseButton.removeEventListener('click', currentImageToggleCloseHandler);
+            if (currentImageTogglePrevHandler) toggleImagePrevButton.removeEventListener('click', currentImageTogglePrevHandler);
+            if (currentImageToggleNextHandler) toggleImageNextButton.removeEventListener('click', currentImageToggleNextHandler);
+
+            currentImageToggleCloseHandler = () => {
+                imageToggleModal.classList.remove('active');
+                toggleImageDisplay.src = ""; 
+                toggleImageCaption.textContent = ""; 
+                if (callback) callback();
+            };
+
+            const switchImage = () => {
+                isShowingPuzzleInToggleModal = !isShowingPuzzleInToggleModal;
+                if (isShowingPuzzleInToggleModal) {
+                    toggleImageDisplay.src = puzzleImagePath;
+                    toggleImageDisplay.alt = "已完成的拼圖";
+                    toggleImageCaption.textContent = "完整拼圖 ♥";
+                    toggleImageDisplay.onerror = () => { console.error("載入拼圖圖片失敗:", puzzleImagePath); toggleImageDisplay.alt = "拼圖圖片載入失敗"; toggleImageCaption.textContent = "圖片載入失敗";};
+                } else {
+                    if (badgeImagePath) {
+                        toggleImageDisplay.src = badgeImagePath;
+                        toggleImageDisplay.alt = "好棒棒徽章";
+                        toggleImageCaption.textContent = "好棒棒徽章 ♥";
+                        toggleImageDisplay.onerror = () => { console.error("載入徽章圖片失敗:", badgeImagePath); toggleImageDisplay.alt = "徽章圖片載入失敗"; toggleImageCaption.textContent = "圖片載入失敗";};
+                    } else { 
+                        isShowingPuzzleInToggleModal = true; 
+                        toggleImageCaption.textContent = "完整拼圖 ♥ (徽章缺失)";
+                        console.warn("徽章圖片路徑未提供，無法切換。");
+                    }
+                }
+            };
+
+            currentImageTogglePrevHandler = switchImage;
+            currentImageToggleNextHandler = switchImage;
+
+            toggleImageCloseButton.addEventListener('click', currentImageToggleCloseHandler);
+            toggleImagePrevButton.addEventListener('click', currentImageTogglePrevHandler);
+            toggleImageNextButton.addEventListener('click', currentImageToggleNextHandler);
+
+        } else {
+            console.error("圖片切換 Modal 的某些元素未找到!", imageToggleModal, toggleImageDisplay, toggleImageCaption, toggleImagePrevButton, toggleImageNextButton, toggleImageCloseButton);
+            if (callback) callback(); 
         }
     }
 
@@ -508,7 +581,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("載入玩家數據錯誤:", error);
-            // showCustomAlert("無法載入您的遊戲進度，請嘗試重新整理。"); // 可能會導致遞迴，暫時註解
         }
         showLoading(false);
     }
@@ -542,7 +614,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Minesweeper Game (踩地雷遊戲邏輯) ---
-    // ... (踩地雷相關函數保持不變，此處省略以縮短篇幅) ...
     function getSubLevelMineCount(mainLevelCfg, subLevelIdx) {
         if (!mainLevelCfg || !mainLevelCfg.subLevelsCount || subLevelIdx < 0 || subLevelIdx >= mainLevelCfg.subLevelsCount) {
             console.warn(`[Minesweeper] getSubLevelMineCount: 無效的參數或關卡設定。主關卡: ${mainLevelCfg ? mainLevelCfg.id : 'N/A'}, 小關卡索引: ${subLevelIdx}`);
@@ -572,7 +643,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof gridSize !== 'number' || typeof numMinesTarget !== 'number' || typeof maxErrorsAllowed !== 'number' ||
             gridSize <= 0 || numMinesTarget < 0 || maxErrorsAllowed < 0) {
             console.error("[Minesweeper] 無效的關卡設定:", {gridSize, numMinesTarget, maxErrorsAllowed});
-            // showCustomAlert("無法建立踩地雷遊戲：關卡設定錯誤。"); // 根據用戶要求移除
             return null;
         }
 
@@ -852,7 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
             game.gameWon = true;
             
             const pieceObtainedNow = awardPuzzlePiece(); 
-            revealAllMines(true); 
+            revealAllMines(true); // 遊戲勝利，顯示所有地雷 (已修改為統一顯示旗幟)
 
             let winMessage = "";
             if (wasFirstTimeCompletionAttempt) { 
@@ -879,21 +949,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // 遊戲結束時顯示所有地雷 (isWin 用於區分勝利和失敗時的顯示)
     function revealAllMines(isWin) {
         if (!currentMinesweeperGame) return;
         const game = currentMinesweeperGame;
         game.board.forEach(row => {
             row.forEach(cellData => {
                 cellData.isWrongFlag = false; 
-                if (cellData.isMine) {
-                    if (cellData.isFlagged) { 
-                        cellData.isRevealed = true; 
-                    } else { 
-                        cellData.isRevealed = true; 
+                if (isWin) { // 玩家勝利
+                    if (cellData.isMine) {
+                        cellData.isFlagged = true; // 自動標記所有地雷
+                        cellData.isRevealed = true; // 揭開以顯示旗幟 (renderMinesweeperBoard 會處理)
                     }
-                } else { 
-                    if (cellData.isFlagged) { 
-                        if (!isWin) { 
+                    // 非地雷格子：如果已標記，保持標記；如果未標記且已揭開，保持揭開。
+                } else { // 玩家失敗
+                    if (cellData.isMine) {
+                        // 如果是地雷且未標記，則揭開顯示炸彈
+                        // 如果是地雷且已標記，則揭開顯示旗幟 (renderMinesweeperBoard 會處理)
+                        cellData.isRevealed = true; 
+                    } else { // 不是地雷
+                        if (cellData.isFlagged) { // 錯誤標記的旗幟
                             cellData.isWrongFlag = true;
                             cellData.isRevealed = true; 
                         }
@@ -956,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Jigsaw Puzzle (拼圖遊戲邏輯) ---
-    // ... (拼圖相關函數保持不變，此處省略以縮短篇幅) ...
+    // ... (拼圖相關函數保持不變) ...
     let draggedPieceElement = null; 
 
     async function setupJigsawPuzzle() {
@@ -1162,7 +1237,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showCustomAlert(`${currentMainLevelConfig.name} 拼圖已完成！`, () => {
                 if (!wasAlreadyComplete && currentMainLevelConfig.completionImagePath) {
-                    showCompletionImageModal(currentMainLevelConfig.completionImagePath, () => {
+                    showCompletionImageModal(currentMainLevelConfig.completionImagePath, () => { 
                         loadMainLevel(currentMainLevelId);
                         showScreen('inLevel');
                     });
@@ -1266,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (backToLevelSelectButton) {
             backToLevelSelectButton.addEventListener('click', () => {
                 console.log("[Back to Level Select] currentMainLevelId:", currentMainLevelId);
-                currentMainLevelId = null; // Explicitly reset when going back to level select
+                currentMainLevelId = null; 
                 currentMainLevelConfig = null;
                 populateLevelSelectScreen();
                 showScreen('levelSelect');
@@ -1278,7 +1353,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("[Minesweeper Back] currentMainLevelId BEFORE calling loadMainLevel:", currentMainLevelId);
                 if (currentMainLevelId === null || typeof currentMainLevelId === 'undefined') {
                     console.error("[Minesweeper Back] currentMainLevelId is invalid. Navigating to level select.");
-                    currentMainLevelConfig = null; // Ensure config is also reset
+                    currentMainLevelConfig = null; 
                     populateLevelSelectScreen();
                     showScreen('levelSelect');
                     return;
@@ -1294,7 +1369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("[Jigsaw Back] currentMainLevelId BEFORE calling loadMainLevel:", currentMainLevelId);
                  if (currentMainLevelId === null || typeof currentMainLevelId === 'undefined') {
                     console.error("[Jigsaw Back] currentMainLevelId is invalid. Navigating to level select.");
-                    currentMainLevelConfig = null; // Ensure config is also reset
+                    currentMainLevelConfig = null; 
                     populateLevelSelectScreen();
                     showScreen('levelSelect');
                     return;
@@ -1418,7 +1493,6 @@ document.addEventListener('DOMContentLoaded', () => {
             currentMainLevelConfig = null;
             populateLevelSelectScreen();
             showScreen('levelSelect');
-            // showCustomAlert("關卡ID無效，請重新選擇關卡。"); // 根據用戶要求移除
             return;
         }
 
@@ -1426,11 +1500,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!newConfig) {
             console.error(`[loadMainLevel] 主關卡設定未找到 for ID: ${mainLevelIdToLoad}. Navigating to level select.`);
-            currentMainLevelId = null; // Reset if config not found
+            currentMainLevelId = null; 
             currentMainLevelConfig = null;
             populateLevelSelectScreen();
             showScreen('levelSelect');
-            // showCustomAlert(`找不到ID為 ${mainLevelIdToLoad} 的關卡資料，請重新選擇。`); // 根據用戶要求移除
             return;
         }
         
@@ -1492,13 +1565,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function startMinesweeperForSubLevel(subLevelIndexToPlay) {
         if (!currentMainLevelConfig || currentMainLevelConfig.id !== currentMainLevelId) {
             console.error("[Main] 無法開始踩地雷：主關卡設定未定義或不匹配。 Navigating to level select.", "Config ID:", currentMainLevelConfig ? currentMainLevelConfig.id : "N/A", "Current ID:", currentMainLevelId);
-            // showCustomAlert("關卡資料錯誤，請重新選擇主關卡。", () => { // 根據用戶要求移除
-            //     currentMainLevelId = null;
-            //     currentMainLevelConfig = null;
-            //     populateLevelSelectScreen();
-            //     showScreen('levelSelect');
-            // });
-            // 如果配置錯誤，直接返回關卡選擇，不再提示
             currentMainLevelId = null;
             currentMainLevelConfig = null;
             populateLevelSelectScreen();
@@ -1555,19 +1621,21 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("[startJigsawGame] currentMainLevelConfig (before check) is:", currentMainLevelConfig ? {...currentMainLevelConfig} : null);
 
         if (!currentMainLevelId || !currentMainLevelConfig || currentMainLevelConfig.id !== currentMainLevelId) {
-            console.error("[startJigsawGame] Invalid state. currentMainLevelId:", currentMainLevelId, "currentMainLevelConfig:", currentMainLevelConfig ? currentMainLevelConfig.id : "null");
-            // showCustomAlert("無法開始拼圖，關卡資料似乎已遺失或不正確。請返回選擇關卡。", () => { // 根據用戶要求移除
-            //     currentMainLevelId = null; // 強制重置
-            //     currentMainLevelConfig = null;
-            //     populateLevelSelectScreen();
-            //     showScreen('levelSelect');
-            // });
-            // 如果狀態無效，直接返回關卡選擇，不再提示
+            console.error("[startJigsawGame] Invalid state before starting. currentMainLevelId:", currentMainLevelId, "Config ID:", currentMainLevelConfig ? currentMainLevelConfig.id : "null");
             currentMainLevelId = null; 
             currentMainLevelConfig = null;
             populateLevelSelectScreen();
             showScreen('levelSelect');
             return;
+        }
+
+        const levelProgress = playerData.levelProgress[currentMainLevelId];
+        if (levelProgress && levelProgress.isPuzzleComplete && currentMainLevelConfig.completionImagePath && currentMainLevelConfig.imagePath) {
+            console.log(`[startJigsawGame] Level ${currentMainLevelId} puzzle is already complete. Showing image toggle modal.`);
+            showImageToggleModal(currentMainLevelConfig.imagePath, currentMainLevelConfig.completionImagePath, () => {
+                console.log("[startJigsawGame] Image toggle modal closed. Staying on inLevel screen.");
+            });
+            return; 
         }
 
         const jigsawTitleElement = document.getElementById('jigsaw-level-title');
@@ -1582,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (auth) {
         auth.onAuthStateChanged(async (user) => {
             console.log("[onAuthStateChanged] User state changed. User:", user ? user.uid : null, "isAnonymous:", user ? user.isAnonymous : null);
-            let previousMainLevelId = currentMainLevelId; // 保存登入前的狀態
+            let previousMainLevelId = currentMainLevelId; 
             console.log("[onAuthStateChanged] currentMainLevelId BEFORE auth change processing:", currentMainLevelId);
             showLoading(true);
 
@@ -1609,7 +1677,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     populateLevelSelectScreen();
                     showScreen('levelSelect');
                 }
-                 // 清理表單
                 if (loginForm && typeof loginForm.reset === 'function') { loginForm.reset(); } 
                 else if (loginForm) { 
                     if (loginEmailInput) loginEmailInput.value = ''; 
@@ -1656,7 +1723,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     } else {
         console.error("Auth 物件未初始化，無法設定 onAuthStateChanged 監聽器。");
-        // showCustomAlert("遊戲驗證服務啟動失敗，請刷新頁面或稍後再試。"); // 根據用戶要求移除
         showScreen('auth');
         showLoading(false);
     }
