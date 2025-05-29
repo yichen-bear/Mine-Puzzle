@@ -196,11 +196,12 @@ hr {
     align-items: center;
     opacity: 0; /* 預設透明 */
     visibility: hidden; /* 預設隱藏 */
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s; /* 調整 transition */
 }
 #loading-indicator.active {
     opacity: 1;
     visibility: visible;
+    transition: opacity 0.3s ease;
 }
 #loading-indicator span { /* 讓文字有點效果 */
     padding: 15px 25px;
@@ -218,159 +219,169 @@ hr {
 }
 
 /* --- 遊戲中畫面 (小關卡選擇畫面) --- */
-#in-level-screen p#level-puzzle-progress { /* 特定針對拼圖進度文字的樣式 */
+#in-level-screen p#level-puzzle-progress {
     font-size: 1.1em;
     margin-bottom: 20px;
     color: #555;
 }
-/* #in-level-screen button { */ /* 移除或調整通用按鈕樣式，因為小關卡按鈕有自己的樣式 */
-    /* display: block; */
-    /* width: calc(100% - 40px); */ /* 讓按鈕寬一點 */
-    /* max-width: 350px; */ /* 但不要太寬 */
-    /* margin-left: auto; */
-    /* margin-right: auto; */
-    /* margin-bottom: 15px; */
-/* } */
 
 /* 小關卡按鈕容器 */
 #sub-level-buttons-container {
     display: grid;
-    /* grid-template-columns: repeat(3, 1fr); */ /* 一行三個，若要五個改為 repeat(5, 1fr) */
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* 自動調整，最小80px */
-    gap: 15px; /* 按鈕間距 */
-    padding: 10px;
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 20px; 
+    padding: 15px; 
     margin-top: 20px;
     margin-bottom: 20px;
-    justify-items: center; /* 水平居中按鈕 */
+    justify-items: center;
 }
 
 /* 小關卡按鈕樣式 */
 .sub-level-button {
-    width: 80px;  /* 正方形寬度 */
-    height: 80px; /* 正方形高度 */
-    padding: 5px; /* 內邊距，讓文字不要太靠邊 */
-    border-radius: 15px; /* 圓角 */
+    width: 90px; 
+    height: 90px;
+    padding: 8px;
+    border-radius: 15px;
     font-size: 0.9em;
     text-align: center;
     display: flex;
-    flex-direction: column; /* 讓文字可以換行並垂直居中 */
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #e0e0e0; /* 預設顏色 (未完成但已解鎖) */
+    background-color: #e0e0e0;
     color: #333;
     border: 1px solid #ccc;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.15s ease, box-shadow 0.15s ease;
-    line-height: 1.2; /* 調整行高以容納兩行文字 */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow-wrap: break-word; /* 允許文字在需要時換行 */
-    word-break: break-all; /* 更強制的換行 */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+    word-break: break-all;
 }
 
 .sub-level-button:hover:not(:disabled) {
     background-color: #d0d0d0;
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-3px) scale(1.03); 
+    box-shadow: 0 6px 12px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.15);
 }
 .sub-level-button:active:not(:disabled) {
-    transform: translateY(0px) scale(1);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    transform: translateY(1px) scale(0.98); 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.08);
 }
 
-/* 已完成的小關卡按鈕 */
 .sub-level-button.completed {
-    background-color: #a5d6a7; /* 淡綠色 */
-    color: #1b5e20; /* 深綠色文字 */
+    background-color: #a5d6a7;
+    color: #1b5e20;
     border-color: #66bb6a;
     font-weight: bold;
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3), 0 1px 3px rgba(76, 175, 80, 0.2); 
 }
 .sub-level-button.completed:hover:not(:disabled) {
     background-color: #81c784;
+    box-shadow: 0 6px 12px rgba(76, 175, 80, 0.35), 0 2px 4px rgba(76, 175, 80, 0.25);
 }
 
-/* 禁用的小關卡按鈕 */
 .sub-level-button:disabled {
     background-color: #f5f5f5;
     color: #aaa;
     cursor: not-allowed;
     border-color: #e0e0e0;
-    box-shadow: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
     transform: none;
 }
 
 
 /* --- 踩地雷遊戲 --- */
 #minesweeper-grid-container {
-    overflow-x: auto; /* 如果格子太多，允許水平滾動 */
-    padding-bottom: 10px; /* 給滾動條一點空間 */
+    overflow-x: auto;
+    padding-bottom: 10px;
     margin: 20px auto;
-    max-width: 100%; /* 確保容器不會超出父元素 */
+    max-width: 100%;
 }
 
 #minesweeper-grid {
-    display: grid; /* JS 會設定 grid-template-columns */
-    border: 2px solid #95a5a6; /* 遊戲板邊框 */
-    background-color: #ecf0f1; /* 遊戲板背景 */
-    margin: 0 auto; /* 使其在容器內置中 (如果容器比它寬) */
-    user-select: none; /* 禁止選取格子內的文字 */
-    touch-action: manipulation; /* 改善觸控體驗 */
-    width: fit-content; /* 讓網格寬度自適應內容 */
+    display: grid;
+    border: 2px solid #95a5a6;
+    background-color: #ecf0f1;
+    margin: 0 auto;
+    user-select: none;
+    touch-action: manipulation;
+    width: fit-content;
 }
 
 .ms-cell {
-    /* JS 會設定 width, height, fontSize, lineHeight */
-    border: 1px solid #bdc3c7; /* 格子邊框 */
-    background-color: #dfe6e9; /* 未翻開的格子背景 */
-    display: flex; /* 使用 flex 垂直和水平置中內容 */
+    border: 1px solid #bdc3c7;
+    background-color: #dfe6e9;
+    display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
     transition: background-color 0.15s ease;
     font-weight: bold;
+    position: relative; /* For ::before pseudo-element positioning */
 }
 
 .ms-cell:hover {
-    background-color: #ced6e0; /* 滑鼠懸停時的背景 */
+    background-color: #ced6e0;
 }
 
 .ms-cell.revealed {
-    background-color: #b2bec3; /* 已翻開的格子背景 */
+    background-color: #b2bec3;
     cursor: default;
 }
-.ms-cell.revealed:hover { /* 翻開後不應再有懸停效果 */
+.ms-cell.revealed:hover {
     background-color: #b2bec3;
 }
 
 .ms-cell.mine {
-    background-color: #e74c3c !important; /* 地雷背景 (重要以覆蓋revealed) */
-    color: white;
-    font-size: 1.2em; /* 讓炸彈圖示大一點 */
+    background-color: #e74c3c !important; /* 地雷背景 */
+    color: white; /* 炸彈符號顏色 */
+}
+.ms-cell.mine.flagged { /* 如果一個地雷被標記了旗幟，並且遊戲結束時顯示它 */
+    background-color: #dfe6e9; /* 維持未揭開的樣式，讓旗幟顯示 */
 }
 
+
+/* *** 修改：旗幟圖示 *** */
 .ms-cell.flagged::before {
-    content: "🚩";
-    font-size: 1em; /* 調整旗幟大小，可根據格子大小調整 */
-    color: #c0392b;
+    content: "⚐"; /* 白色旗幟符號 U+2690 */
+    font-size: 1.1em; 
+    color: #c0392b; 
+    line-height: 1; 
+    position: absolute; /* 確保能覆蓋數字 */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1; /* 嘗試讓旗幟在數字之上，如果數字也顯示的話 */
 }
+/* 新增：錯誤標記的旗幟樣式 */
+.ms-cell.revealed.wrong-flag-content {
+    color: #000; /* 叉叉的顏色 */
+    background-color: #ffdddd; /* 淡淡的紅色背景表示錯誤 */
+}
+.ms-cell.revealed.wrong-flag-content::before { /* 移除原來的旗幟符號 */
+    content: "";
+}
+
 
 /* 數字顏色 */
-.ms-cell[data-mines="1"] { color: #3498db; } /* 藍 */
-.ms-cell[data-mines="2"] { color: #2ecc71; } /* 綠 */
-.ms-cell[data-mines="3"] { color: #e74c3c; } /* 紅 */
-.ms-cell[data-mines="4"] { color: #8e44ad; } /* 紫 */
-.ms-cell[data-mines="5"] { color: #d35400; } /* 橙 */
-.ms-cell[data-mines="6"] { color: #16a085; } /* 青 */
-.ms-cell[data-mines="7"] { color: #2c3e50; } /* 深灰藍 */
-.ms-cell[data-mines="8"] { color: #7f8c8d; } /* 灰 */
+.ms-cell[data-mines="1"] { color: #3498db; }
+.ms-cell[data-mines="2"] { color: #2ecc71; }
+.ms-cell[data-mines="3"] { color: #e74c3c; }
+.ms-cell[data-mines="4"] { color: #8e44ad; }
+.ms-cell[data-mines="5"] { color: #d35400; }
+.ms-cell[data-mines="6"] { color: #16a085; }
+.ms-cell[data-mines="7"] { color: #2c3e50; }
+.ms-cell[data-mines="8"] { color: #7f8c8d; }
 
-#minesweeper-screen .game-info { /* 包裝地雷數和錯誤數的容器 */
+#minesweeper-screen .game-info {
     display: flex;
     justify-content: space-around;
     margin-bottom: 15px;
     font-size: 1.1em;
     color: #555;
 }
-#minesweeper-screen .game-info span span { /* 數字本身 */
+#minesweeper-screen .game-info span span {
     font-weight: bold;
     color: #333;
 }
@@ -378,43 +389,42 @@ hr {
 /* --- 拼圖遊戲 --- */
 #jigsaw-puzzle-area {
     display: flex;
-    flex-wrap: wrap; /* 在小螢幕上允許換行 */
-    justify-content: space-around; /* 或 space-between */
+    flex-wrap: wrap;
+    justify-content: space-around;
     margin-top: 20px;
-    gap: 20px; /* 拼圖框和碎片區之間的間隔 */
+    gap: 20px;
 }
 
 #jigsaw-frame-container {
-    display: grid; /* JS 會設定 grid-template-columns/rows */
-    border: 3px solid #34495e; /* 拼圖框邊框 */
-    background-color: #ecf0f1; /* 拼圖框背景 */
-    position: relative; /* 用於絕對定位已放置的碎片 (如果需要) */
-    padding: 5px; /* 內邊距，讓碎片不要緊貼邊框 */
-    box-shadow: 0 0 10px rgba(0,0,0,0.1) inset; /* 內陰影 */
+    display: grid;
+    border: 3px solid #34495e;
+    background-color: #ecf0f1;
+    position: relative;
+    padding: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1) inset;
 }
 
 .jigsaw-slot {
-    /* JS 會設定 width, height */
-    border: 1px dashed #95a5a6; /* 格子虛線邊框 */
-    background-color: rgba(255,255,255, 0.3); /* 半透明背景 */
+    border: 1px dashed #95a5a6;
+    background-color: rgba(255,255,255, 0.3);
     display: flex;
     justify-content: center;
     align-items: center;
-    box-sizing: border-box; /* 確保邊框在尺寸內 */
+    box-sizing: border-box;
 }
-.jigsaw-slot:hover { /* 拖曳碎片到格子上時的視覺回饋 */
+.jigsaw-slot:hover {
     background-color: rgba(52, 152, 219, 0.1);
     border-style: solid;
 }
 
 #jigsaw-pieces-container {
-    width: 100%; /* 在 flex-wrap 時佔滿一行 */
-    max-width: 400px; /* 限制最大寬度 */
-    min-height: 200px; /* 最小高度 */
+    width: 100%;
+    max-width: 400px;
+    min-height: 200px;
     display: flex;
     flex-wrap: wrap;
-    align-content: flex-start; /* 碎片從頂部開始排列 */
-    gap: 8px; /* 碎片之間的間隔 */
+    align-content: flex-start;
+    gap: 8px;
     padding: 15px;
     border: 1px solid #dfe6e9;
     border-radius: 8px;
@@ -422,12 +432,11 @@ hr {
 }
 
 .jigsaw-piece {
-    /* JS 會設定 width, height (canvas) */
     cursor: grab;
     border: 1px solid #7f8c8d;
     box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
     transition: transform 0.1s ease-out, box-shadow 0.1s ease-out, opacity 0.2s;
-    background-color: #fff; /* 如果 canvas 透明，可以看到背景 */
+    background-color: #fff;
 }
 
 .jigsaw-piece:hover {
@@ -438,19 +447,86 @@ hr {
 .jigsaw-piece.dragging {
     opacity: 0.6;
     cursor: grabbing;
-    transform: scale(1.1); /* 拖曳時放大一點 */
+    transform: scale(1.1);
     box-shadow: 4px 4px 10px rgba(0,0,0,0.35);
 }
 
-.jigsaw-piece.placed-animation { /* 放置成功時的短暫動畫 */
+.jigsaw-piece.placed-animation {
     animation: piecePlaced 0.8s ease-out;
 }
 
 @keyframes piecePlaced {
     0% { transform: scale(1); box-shadow: 0 0 5px rgba(46, 204, 113, 0); }
-    50% { transform: scale(1.15); box-shadow: 0 0 15px 5px rgba(46, 204, 113, 0.7); } /* 綠色光暈 */
+    50% { transform: scale(1.15); box-shadow: 0 0 15px 5px rgba(46, 204, 113, 0.7); }
     100% { transform: scale(1); box-shadow: 0 0 5px rgba(46, 204, 113, 0); }
 }
+
+/* --- Modal 樣式 --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; 
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease;
+}
+.modal-content {
+    background-color: #fff;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+.modal-content p {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    color: #333;
+}
+.modal-buttons {
+    display: flex;
+    justify-content: space-around; 
+    gap: 10px; 
+}
+.modal-buttons button { 
+    padding: 10px 20px;
+    font-size: 0.95em;
+    min-width: 100px;
+    text-transform: none; 
+    letter-spacing: normal;
+}
+.modal-button-confirm {
+    background-color: #28a745; 
+}
+.modal-button-confirm:hover {
+    background-color: #218838;
+}
+.modal-button-cancel {
+    background-color: #7f8c8d; 
+}
+.modal-button-cancel:hover {
+    background-color: #6c7a7d;
+}
+
 
 /* --- 響應式調整 --- */
 @media (max-width: 768px) {
@@ -458,55 +534,61 @@ hr {
     .container { padding: 20px; margin: 10px auto; }
     h1 { font-size: 2em; }
     h2 { font-size: 1.6em; }
-    /* button { padding: 10px 18px; font-size: 0.95em; } */ /* 通用按鈕調整，但小關卡按鈕有自己的大小 */
-    input[type="text"], input[type="password"], input[type="email"] { padding: 12px; }
 
     #level-select-buttons button { padding: 18px 25px; font-size: 1.1em; min-width: 150px; }
-    /* #in-level-screen button { width: calc(100% - 20px); } */ /* 已被小關卡按鈕取代 */
 
     #sub-level-buttons-container {
-        /* grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); */ /* 在較小螢幕上，按鈕可以更小 */
-        gap: 10px;
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 15px;
     }
     .sub-level-button {
-        width: 70px;
-        height: 70px;
-        font-size: 0.8em;
+        width: 80px; 
+        height: 80px;
+        font-size: 0.85em;
+    }
+
+    .modal-content {
+        padding: 20px;
+    }
+    .modal-content p {
+        font-size: 1em;
+    }
+    .modal-buttons button {
+        padding: 8px 15px;
+        font-size: 0.9em;
     }
 
 
     #jigsaw-puzzle-area {
-        flex-direction: column; /* 垂直排列拼圖框和碎片區 */
+        flex-direction: column;
         align-items: center;
     }
     #jigsaw-pieces-container {
         width: 90%;
         margin-top: 20px;
-        max-width: none; /* 在垂直排列時，允許它更寬 */
+        max-width: none;
     }
 }
 
 @media (max-width: 480px) {
     h1 { font-size: 1.8em; }
     h2 { font-size: 1.4em; }
-    /* button { padding: 10px 15px; font-size: 0.9em; } */
     #user-info-container { padding: 6px 10px; top: 5px; right: 5px;}
     #username-display { font-size: 0.9em; margin-right: 8px;}
     #logout-button { padding: 6px 10px; font-size: 0.8em;}
 
     #sub-level-buttons-container {
-        /* grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); */
-        gap: 8px;
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 10px;
     }
     .sub-level-button {
-        width: 65px; /* 在非常小的螢幕上進一步縮小 */
-        height: 65px;
-        font-size: 0.75em;
-        border-radius: 10px;
+        width: 75px;
+        height: 75px;
+        font-size: 0.8em;
+        border-radius: 12px;
     }
 
     #minesweeper-grid-container {
-        /* 在非常小的螢幕上，可能需要更積極地縮小格子 */
         /* JS 中的 cellSize 計算會處理大部分情況 */
     }
 }
