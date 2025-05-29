@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             id: 2, name: "第二關",
             imagePath: "assets/img/第二關拼圖.jpg",
-            completionImagePath: "assets/img/good2.png", 
+            completionImagePath: "assets/img/good2-1.png", 
             puzzlePiecesCount: 16, puzzleRows: 4, puzzleCols: 4,
             msGridSize: 15,
             msMaxErrors: 4,
