@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isShowingPuzzleInToggleModal) {
                     toggleImageDisplay.src = puzzleImagePath;
                     toggleImageDisplay.alt = "已完成的拼圖";
-                    toggleImageCaption.textContent = "完整拼圖 ♥";
+                    toggleImageCaption.textContent = "完整拼圖 🧩";
                     toggleImageDisplay.onerror = () => { console.error("載入拼圖圖片失敗:", puzzleImagePath); toggleImageDisplay.alt = "拼圖圖片載入失敗"; toggleImageCaption.textContent = "圖片載入失敗";};
                 } else {
                     if (badgeImagePath) {
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         toggleImageDisplay.onerror = () => { console.error("載入徽章圖片失敗:", badgeImagePath); toggleImageDisplay.alt = "徽章圖片載入失敗"; toggleImageCaption.textContent = "圖片載入失敗";};
                     } else { 
                         isShowingPuzzleInToggleModal = true; 
-                        toggleImageCaption.textContent = "完整拼圖 ♥ (徽章缺失)";
+                        toggleImageCaption.textContent = "完整拼圖 🧩 (徽章缺失)";
                         console.warn("徽章圖片路徑未提供，無法切換。");
                     }
                 }
