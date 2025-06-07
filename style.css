@@ -3,7 +3,12 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     margin: 0;
     padding: 20px;
-    background-color: #f0f2f5; /* 淡雅的背景色 */
+    background-image: url('assets/img/背景1.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: #f0f2f5; /* 淡雅的背景色 - 作為備用 */
     color: #333;
     line-height: 1.6;
     display: flex;
