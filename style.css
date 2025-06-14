@@ -23,7 +23,7 @@ body {
     max-width: 900px;
     margin: 20px auto;
     padding: 30px;
-    background-color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.95); /* 讓容器稍微透明，透出背景 */
     border-radius: 16px; /* 更大的圓角 */
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); /* 更明顯的陰影 */
     text-align: center;
@@ -233,9 +233,9 @@ hr {
 /* 小關卡按鈕容器 */
 #sub-level-buttons-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); 
-    gap: 20px; 
-    padding: 15px; 
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 20px;
+    padding: 15px;
     margin-top: 20px;
     margin-bottom: 20px;
     justify-items: center;
@@ -243,7 +243,7 @@ hr {
 
 /* 小關卡按鈕樣式 */
 .sub-level-button {
-    width: 90px; 
+    width: 90px;
     height: 90px;
     padding: 8px;
     border-radius: 15px;
@@ -266,11 +266,11 @@ hr {
 
 .sub-level-button:hover:not(:disabled) {
     background-color: #d0d0d0;
-    transform: translateY(-3px) scale(1.03); 
+    transform: translateY(-3px) scale(1.03);
     box-shadow: 0 6px 12px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.15);
 }
 .sub-level-button:active:not(:disabled) {
-    transform: translateY(1px) scale(0.98); 
+    transform: translateY(1px) scale(0.98);
     box-shadow: 0 2px 4px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.08);
 }
 
@@ -279,7 +279,7 @@ hr {
     color: #1b5e20;
     border-color: #66bb6a;
     font-weight: bold;
-    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3), 0 1px 3px rgba(76, 175, 80, 0.2); 
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3), 0 1px 3px rgba(76, 175, 80, 0.2);
 }
 .sub-level-button.completed:hover:not(:disabled) {
     background-color: #81c784;
@@ -291,12 +291,31 @@ hr {
     color: #aaa;
     cursor: not-allowed;
     border-color: #e0e0e0;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     transform: none;
 }
 
 
 /* --- 踩地雷遊戲 --- */
+#minesweeper-screen .game-info {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: #555;
+    background-color: rgba(236, 240, 241, 0.7);
+    padding: 8px;
+    border-radius: 8px;
+}
+#minesweeper-screen .game-info span span {
+    font-weight: bold;
+    color: #333;
+    background-color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
 #minesweeper-grid-container {
     overflow-x: auto;
     padding-bottom: 10px;
@@ -350,9 +369,9 @@ hr {
 /* *** 修改：旗幟圖示 *** */
 .ms-cell.flagged::before {
     content: "⚐"; /* 白色旗幟符號 U+2690 */
-    font-size: 1.1em; 
-    color: #c0392b; 
-    line-height: 1; 
+    font-size: 1.1em;
+    color: #c0392b;
+    line-height: 1;
     position: absolute; /* 確保能覆蓋數字 */
     top: 50%;
     left: 50%;
@@ -378,18 +397,6 @@ hr {
 .ms-cell[data-mines="6"] { color: #16a085; }
 .ms-cell[data-mines="7"] { color: #2c3e50; }
 .ms-cell[data-mines="8"] { color: #7f8c8d; }
-
-#minesweeper-screen .game-info {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 15px;
-    font-size: 1.1em;
-    color: #555;
-}
-#minesweeper-screen .game-info span span {
-    font-weight: bold;
-    color: #333;
-}
 
 /* --- 拼圖遊戲 --- */
 #jigsaw-puzzle-area {
@@ -477,7 +484,7 @@ hr {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000; 
+    z-index: 2000;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0s linear 0.3s;
@@ -493,7 +500,7 @@ hr {
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     text-align: center;
-    max-width: 400px;
+    max-width: 500px;
     width: 90%;
     transform: scale(0.9);
     transition: transform 0.3s ease;
@@ -509,24 +516,32 @@ hr {
 }
 .modal-buttons {
     display: flex;
-    justify-content: space-around; 
-    gap: 10px; 
+    justify-content: center; /* 讓只有一個按鈕時也置中 */
+    gap: 10px;
 }
-.modal-buttons button { 
+.modal-buttons button {
     padding: 10px 20px;
     font-size: 0.95em;
     min-width: 100px;
-    text-transform: none; 
+    text-transform: none;
     letter-spacing: normal;
 }
+
+/* 新增的遊戲說明文字樣式 */
+.instructions-text {
+    text-align: left;
+    line-height: 1.8;
+    margin-bottom: 25px !important;
+}
+
 .modal-button-confirm {
-    background-color: #28a745; 
+    background-color: #28a745;
 }
 .modal-button-confirm:hover {
     background-color: #218838;
 }
 .modal-button-cancel {
-    background-color: #7f8c8d; 
+    background-color: #7f8c8d;
 }
 .modal-button-cancel:hover {
     background-color: #6c7a7d;
@@ -543,11 +558,11 @@ hr {
     #level-select-buttons button { padding: 18px 25px; font-size: 1.1em; min-width: 150px; }
 
     #sub-level-buttons-container {
-        grid-template-columns: repeat(3, 1fr); 
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
         gap: 15px;
     }
     .sub-level-button {
-        width: 80px; 
+        width: 80px;
         height: 80px;
         font-size: 0.85em;
     }
@@ -583,7 +598,7 @@ hr {
     #logout-button { padding: 6px 10px; font-size: 0.8em;}
 
     #sub-level-buttons-container {
-        grid-template-columns: repeat(2, 1fr); 
+        grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
         gap: 10px;
     }
     .sub-level-button {

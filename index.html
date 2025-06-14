@@ -69,14 +69,22 @@
         <div id="level-select-screen" class="screen">
             <h2>選擇關卡</h2>
             <div id="level-select-buttons">
-                </div>
+            </div>
+
+            <!-- ▼▼▼ 在此處新增以下程式碼 ▼▼▼ -->
+            <div class="rules-buttons-container" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                <button id="show-game-rules-button" style="background-color: #7f8c8d; font-size: 0.9em;">遊戲玩法說明</button>
+                <button id="show-minesweeper-rules-button" style="background-color: #7f8c8d; font-size: 0.9em;">踩地雷規則</button>
+            </div>
+            <!-- ▲▲▲ 新增結束 ▲▲▲ -->
+
         </div>
 
         <div id="in-level-screen" class="screen">
             <h2 id="current-level-title">關卡標題</h2>
             <p id="level-puzzle-progress">拼圖進度: 0/0</p>
             <div id="sub-level-buttons-container" style="margin-bottom: 15px;">
-                </div>
+            </div>
             <button id="play-jigsaw-button">開始拼圖</button>
             <hr style="margin: 15px 0; border-top: 1px solid #eee;">
             <button id="back-to-level-select">返回關卡選擇</button>
@@ -84,15 +92,15 @@
 
         <div id="minesweeper-screen" class="screen">
             <h2 id="minesweeper-level-title">踩地雷</h2>
-            <div style="margin-bottom: 10px;">
-                <span>剩餘地雷: <span id="mines-left">0</span></span> |
+            <div class="game-info">
+                <span>剩餘地雷: <span id="mines-left">0</span></span>
                 <span>錯誤次數: <span id="errors-made">0</span> / <span id="max-errors">3</span></span>
             </div>
-            <div id="minesweeper-grid-container" style="overflow-x: auto; padding-bottom: 5px;">
+            <div id="minesweeper-grid-container">
                  <div id="minesweeper-grid">
-                    </div>
+                 </div>
             </div>
-            <p id="minesweeper-message" class="error-message" style="min-height: 1.3em; margin-top:10px;"></p>
+            <p id="minesweeper-message" class="error-message"></p>
             <button id="minesweeper-back-button">放棄並返回</button>
         </div>
 
@@ -100,14 +108,67 @@
             <h2 id="jigsaw-level-title">拼圖遊戲</h2>
             <div id="jigsaw-puzzle-area">
                 <div id="jigsaw-frame-container">
-                    </div>
+                </div>
                 <div id="jigsaw-pieces-container">
-                    </div>
+                </div>
             </div>
-            <p id="jigsaw-message" class="error-message" style="min-height: 1.3em; margin-top:10px;"></p>
+            <p id="jigsaw-message" class="error-message"></p>
             <button id="jigsaw-back-button">儲存並返回</button>
         </div>
-    </div> <div id="replay-confirm-modal" class="modal-overlay">
+    </div>
+
+    <!-- Modals (彈出視窗) -->
+    <div id="instructions-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>歡迎來到 謎雷拼圖！</h3>
+            <p class="instructions-text">
+                <strong>遊戲說明：</strong><br>
+                這個遊戲結合了經典的「踩地雷」和有趣的「拼圖」！<br>
+                &bull; 遊戲總共分為三大關卡。<br>
+                &bull; 每一大關中，包含數個踩地雷小遊戲。<br>
+                &bull; 成功完成一個踩地雷小關卡，你將會隨機獲得一枚獨特的拼圖碎片！<br>
+                &bull; 收集碎片後，就可以到「開始拼圖」挑戰，將美麗的圖片還原。<br>
+                <br>
+                鼓起勇氣，保持耐心，祝您玩得愉快，順利解開所有謎題！🚀
+            </p>
+            <div class="modal-buttons">
+                <button id="instructions-ok-button" class="modal-button-confirm">我了解了，繼續！</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- === 新增：詢問是否需要踩地雷教學的 Modal === -->
+    <div id="minesweeper-tutorial-query-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>踩地雷新手教學</h3>
+            <p>在開始前，請問您熟悉踩地雷的規則嗎？</p>
+            <div class="modal-buttons">
+                <button id="tutorial-query-no-button" class="modal-button-cancel">沒玩過，請教我</button>
+                <button id="tutorial-query-yes-button" class="modal-button-confirm">玩過了，直接開始</button>
+            </div>
+        </div>
+    </div>
+    <!-- ======================================= -->
+
+    <div id="minesweeper-tutorial-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>踩地雷 新手教學</h3>
+            <p class="instructions-text">
+                <strong>如何遊玩：</strong><br>
+                &bull; <strong>左鍵點擊：</strong>安全地揭開一個方塊。<br>
+                &bull; <strong>方塊中的數字：</strong>代表它周圍八個方塊中，隱藏著幾顆地雷。<br>
+                &bull; <strong>插旗 ⚐：</strong>當你確定某個方塊是地雷時，在電腦上對它「<strong>按右鍵</strong>」；在手機上對它「<strong>長按</strong>」，即可插上旗幟標記。<br>
+                &bull; <strong>遊戲目標：</strong>揭開所有沒有地雷的安全方塊。<br>
+                &bull; <strong>注意：</strong>每場遊戲的「錯誤次數」有限，點到地雷就算一次錯誤喔！<br><br>
+                運用邏輯和推理，祝你好運！
+            </p>
+            <div class="modal-buttons">
+                <button id="tutorial-start-button" class="modal-button-confirm">我明白了</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="replay-confirm-modal" class="modal-overlay">
         <div class="modal-content">
             <p id="replay-confirm-text">您確定要重玩這個已經完成的小關卡嗎？重玩不會獲得新的拼圖碎片。</p>
             <div class="modal-buttons">
