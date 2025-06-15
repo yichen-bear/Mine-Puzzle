@@ -71,13 +71,10 @@
             <div id="level-select-buttons">
             </div>
 
-            <!-- ▼▼▼ 在此處新增以下程式碼 ▼▼▼ -->
             <div class="rules-buttons-container" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
                 <button id="show-game-rules-button" style="background-color: #7f8c8d; font-size: 0.9em;">遊戲玩法說明</button>
                 <button id="show-minesweeper-rules-button" style="background-color: #7f8c8d; font-size: 0.9em;">踩地雷規則</button>
             </div>
-            <!-- ▲▲▲ 新增結束 ▲▲▲ -->
-
         </div>
 
         <div id="in-level-screen" class="screen">
@@ -85,7 +82,11 @@
             <p id="level-puzzle-progress">拼圖進度: 0/0</p>
             <div id="sub-level-buttons-container" style="margin-bottom: 15px;">
             </div>
-            <button id="play-jigsaw-button">開始拼圖</button>
+            <div class="in-level-buttons-container">
+                <button id="prev-level-button" style="display:none; background-color: #22c566;">前往上一關</button>
+                <button id="play-jigsaw-button">開始拼圖</button>
+                <button id="next-level-button" style="display:none; background-color: #22c566;">前往下一關</button>
+            </div>
             <hr style="margin: 15px 0; border-top: 1px solid #eee;">
             <button id="back-to-level-select">返回關卡選擇</button>
         </div>
@@ -95,13 +96,17 @@
             <div class="game-info">
                 <span>剩餘地雷: <span id="mines-left">0</span></span>
                 <span>錯誤次數: <span id="errors-made">0</span> / <span id="max-errors">3</span></span>
+                <span>提示次數: <span id="hints-left">0</span></span>
             </div>
             <div id="minesweeper-grid-container">
                  <div id="minesweeper-grid">
                  </div>
             </div>
+            <div class="minesweeper-controls">
+                <button id="minesweeper-hint-button">使用提示</button>
+                <button id="minesweeper-back-button">放棄並返回</button>
+            </div>
             <p id="minesweeper-message" class="error-message"></p>
-            <button id="minesweeper-back-button">放棄並返回</button>
         </div>
 
         <div id="jigsaw-screen" class="screen">
@@ -172,8 +177,8 @@
         <div class="modal-content">
             <p id="replay-confirm-text">您確定要重玩這個已經完成的小關卡嗎？重玩不會獲得新的拼圖碎片。</p>
             <div class="modal-buttons">
-                <button id="replay-confirm-yes" class="modal-button-confirm">確定重玩</button>
                 <button id="replay-confirm-no" class="modal-button-cancel">取消</button>
+                <button id="replay-confirm-yes" class="modal-button-confirm">確定重玩</button>
             </div>
         </div>
     </div>
@@ -206,6 +211,20 @@
           <button id="toggle-image-close-button" class="modal-button-confirm">關閉</button>
         </div>
       </div>
+    </div>
+
+    <div id="hint-confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>您確定要使用提示嗎？</h3>
+            <p id="hint-confirm-text">使用後點擊的第一個方塊：</p>
+            <p id="hint-confirm-text">不是地雷 --> 自動翻開</p>
+            <p id="hint-confirm-text">是地雷 --> 自動標記</p>
+            <p id="hint-confirm-text">您還剩 <strong><span id="hint-remaining-count">0</span></strong>  次提示機會。</p>
+            <div class="modal-buttons">
+                <button id="hint-confirm-no" class="modal-button-cancel">取消</button>
+                <button id="hint-confirm-yes" class="modal-button-confirm">確定使用</button>
+            </div>
+        </div>
     </div>
 
     <script src="main.js"></script>

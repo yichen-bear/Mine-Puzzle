@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
         hasSeenMinesweeperTutorial: false, // **新增：追蹤是否看過踩地雷教學**
         levelProgress: {}
     };
+    let hintModeActive = false; // 新增：提示模式是否激活
+    let hintsUsedInCurrentSubLevel = 0; // 新增：當前小關卡已使用的提示次數
 
     // --- UI 元素參照 ---
     const loadingIndicator = document.getElementById('loading-indicator');
@@ -80,10 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const minesLeftDisplay = document.getElementById('mines-left');
     const errorsMadeDisplay = document.getElementById('errors-made');
     const maxErrorsDisplay = document.getElementById('max-errors');
+    const hintsLeftDisplay = document.getElementById('hints-left');
     const minesweeperMessage = document.getElementById('minesweeper-message');
     const jigsawFrameContainer = document.getElementById('jigsaw-frame-container');
     const jigsawPiecesContainer = document.getElementById('jigsaw-pieces-container');
     const jigsawMessage = document.getElementById('jigsaw-message');
+    const playJigsawButton = document.getElementById('play-jigsaw-button');
+    const prevLevelButton = document.getElementById('prev-level-button');
+    const nextLevelButton = document.getElementById('next-level-button');
     
     // 遊戲說明 Modal 參照
     const instructionsModal = document.getElementById('instructions-modal');
@@ -114,12 +120,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleImagePrevButton = document.getElementById('toggle-image-prev');
     const toggleImageNextButton = document.getElementById('toggle-image-next');
     const toggleImageCloseButton = document.getElementById('toggle-image-close-button');
-    // ▼▼▼ 在此處新增以下程式碼 ▼▼▼
     const showGameRulesButton = document.getElementById('show-game-rules-button');
     const showMinesweeperRulesButton = document.getElementById('show-minesweeper-rules-button');
-    // ▲▲▲ 新增結束 ▲▲▲
-
-
+    const hintConfirmModal = document.getElementById('hint-confirm-modal');
+    const hintConfirmYesButton = document.getElementById('hint-confirm-yes');
+    const hintConfirmNoButton = document.getElementById('hint-confirm-no');
+    const hintRemainingCount = document.getElementById('hint-remaining-count');
 
     // --- 遊戲關卡設定 (GAME_LEVELS) ---
     const GAME_LEVELS = [
@@ -129,10 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
             completionImagePath: "assets/img/good1.png",
             puzzlePiecesCount: 9, puzzleRows: 3, puzzleCols: 3,
             msGridSize: 10,
-            msMaxErrors: 3,
+            msMaxErrors: 2,
             subLevelsCount: 9,
             msDensityStart: 0.08,
-            msDensityEnd: 0.13
+            msDensityEnd: 0.13,
+            maxHints: 1 // 新增：第一關提示次數
         },
         {
             id: 2, name: "第二關",
@@ -140,10 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
             completionImagePath: "assets/img/good2-1.png",
             puzzlePiecesCount: 16, puzzleRows: 4, puzzleCols: 4,
             msGridSize: 15,
-            msMaxErrors: 4,
+            msMaxErrors: 3,
             subLevelsCount: 16,
             msDensityStart: 0.12,
-            msDensityEnd: 0.16
+            msDensityEnd: 0.16,
+            maxHints: 2 // 新增：第二關提示次數
         },
         {
             id: 3, name: "第三關",
@@ -151,10 +159,11 @@ document.addEventListener('DOMContentLoaded', () => {
             completionImagePath: "assets/img/good3.png",
             puzzlePiecesCount: 25, puzzleRows: 5, puzzleCols: 5,
             msGridSize: 20,
-            msMaxErrors: 5,
+            msMaxErrors: 4,
             subLevelsCount: 25,
             msDensityStart: 0.15,
-            msDensityEnd: 0.18
+            msDensityEnd: 0.18,
+            maxHints: 3 // 新增：第三關提示次數
         },
     ];
 
@@ -184,10 +193,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentImageToggleNextHandler = null;
     let isShowingPuzzleInToggleModal = true;
     let currentInstructionsOkHandler = null;
-    // ▼ 新增的變數宣告，並移除舊的 currentTutorialConfirmHandler ▼
     let currentTutorialQueryYesHandler = null; 
     let currentTutorialQueryNoHandler = null;
     let currentFullTutorialCloseHandler = null;
+    let currentHintConfirmYesHandler = null;
+    let currentHintConfirmNoHandler = null;
 
     // **新增：顯示遊戲說明的 Modal 函數**
     function showInstructionsModal(callback) {
@@ -202,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
         instructionsOkButton.addEventListener('click', currentInstructionsOkHandler, { once: true });
     }
 
-    // ▼▼▼ 在此處新增以下程式碼 ▼▼▼
     function showTutorialQueryModal(finalCallback) {
         const handleChoice = (needsTutorial) => {
             tutorialQueryModal.classList.remove('active');
@@ -227,22 +236,19 @@ document.addEventListener('DOMContentLoaded', () => {
         tutorialQueryYesButton.addEventListener('click', yesHandler);
         tutorialQueryNoButton.addEventListener('click', noHandler);
     }
-    // ▲▲▲ 新增結束 ▲▲▲
     
     // **新增：顯示踩地雷教學的 Modal 函數**
     function showMinesweeperTutorialModal(callback) {
-    if (currentFullTutorialCloseHandler) {
-        tutorialStartButton.removeEventListener('click', currentFullTutorialCloseHandler);
+        if (currentFullTutorialCloseHandler) {
+            tutorialStartButton.removeEventListener('click', currentFullTutorialCloseHandler);
+        }
+        currentFullTutorialCloseHandler = () => {
+            minesweeperTutorialModal.classList.remove('active');
+            if (callback) callback();
+        };
+        minesweeperTutorialModal.classList.add('active');
+        tutorialStartButton.addEventListener('click', currentFullTutorialCloseHandler, { once: true });
     }
-    currentFullTutorialCloseHandler = () => {
-        minesweeperTutorialModal.classList.remove('active');
-        if (callback) callback();
-    };
-    minesweeperTutorialModal.classList.add('active');
-    tutorialStartButton.addEventListener('click', currentFullTutorialCloseHandler, { once: true });
-}
-
-
 
     function showReplayConfirmDialog(callback) {
         console.log('[showReplayConfirmDialog] replayConfirmModal:', replayConfirmModal, 'YesBtn:', replayConfirmYesButton, 'NoBtn:', replayConfirmNoButton);
@@ -412,6 +418,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 新增：顯示提示確認 Modal 的函數
+    function showHintConfirmModal(callback) {
+        if (hintConfirmModal && hintConfirmYesButton && hintConfirmNoButton) {
+            const modalButtonsContainer = hintConfirmModal.querySelector('.modal-buttons');
+            if (hintConfirmYesButton.parentNode !== modalButtonsContainer && modalButtonsContainer) {
+                console.warn("[showHintConfirmModal] Yes button detached, re-appending.");
+                modalButtonsContainer.appendChild(hintConfirmYesButton);
+            }
+            if (hintConfirmNoButton.parentNode !== modalButtonsContainer && modalButtonsContainer) {
+                console.warn("[showHintConfirmModal] No button detached, re-appending.");
+                modalButtonsContainer.appendChild(hintConfirmNoButton);
+            }
+
+            // 更新剩餘提示次數顯示
+            const remainingHints = currentMainLevelConfig.maxHints - hintsUsedInCurrentSubLevel;
+            hintRemainingCount.textContent = remainingHints;
+
+            hintConfirmModal.classList.add('active');
+            if (currentHintConfirmYesHandler) hintConfirmYesButton.removeEventListener('click', currentHintConfirmYesHandler);
+            if (currentHintConfirmNoHandler) hintConfirmNoButton.removeEventListener('click', currentHintConfirmNoHandler);
+
+            currentHintConfirmYesHandler = () => {
+                hintConfirmModal.classList.remove('active');
+                callback(true);
+            };
+            currentHintConfirmNoHandler = () => {
+                hintConfirmModal.classList.remove('active');
+                callback(false);
+            };
+            hintConfirmYesButton.addEventListener('click', currentHintConfirmYesHandler);
+            hintConfirmNoButton.addEventListener('click', currentHintConfirmNoHandler);
+        } else {
+            console.error("提示確認 Modal 的某些元素未找到!");
+            const confirmed = confirm("您確定要使用提示嗎？（自訂視窗載入失敗）");
+            callback(confirmed);
+        }
+    }
 
     // --- Firebase Authentication ---
     async function registerUser(email, password) {
@@ -540,7 +583,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showLoading(false);
     }
-
 
     async function signInGuest() {
         if (loginErrorMsg) loginErrorMsg.textContent = '';
@@ -759,6 +801,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // 重置當前小關卡的提示使用次數
+        hintsUsedInCurrentSubLevel = 0;
+
         return {
             board,
             size: gridSize,
@@ -829,7 +874,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`[Minesweeper] 地雷已在首次點擊後佈置。安全點: (${firstClickR}, ${firstClickC}), 實際地雷數: ${game.numMines}`);
     }
 
-
     function renderMinesweeperBoard() {
         if (!currentMinesweeperGame) {
             if (minesweeperGridElement) minesweeperGridElement.innerHTML = '錯誤：遊戲數據未載入。';
@@ -843,7 +887,6 @@ document.addEventListener('DOMContentLoaded', () => {
             scrollYBeforeRender = window.pageYOffset || document.documentElement.scrollTop;
             minesweeperGridRectBeforeRender = minesweeperGridElement.getBoundingClientRect();
         }
-
 
         const game = currentMinesweeperGame;
         if (!minesweeperGridElement || !minesweeperGridContainer) {
@@ -860,7 +903,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (containerWidth === 0 && game.size > 0) {
             console.warn("[Minesweeper] 容器寬度為 0，格子可能無法正確渲染。檢查 CSS display 屬性。");
         }
-
 
         game.board.forEach(row => {
             row.forEach(cellData => {
@@ -917,6 +959,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentMinesweeperGame || currentMinesweeperGame.gameOver) return;
         const game = currentMinesweeperGame;
 
+        // 如果是提示模式，處理提示邏輯
+        if (hintModeActive) {
+            hintModeActive = false;
+            const cell = game.board[r][c];
+            
+            if (cell.isRevealed || cell.isFlagged) {
+                showCustomAlert("提示無法用於已揭開或已標記的方塊。", null);
+                return;
+            }
+            
+            if (cell.isMine) {
+                // 如果是地雷，自動標記旗幟
+                toggleMinesweeperFlag(r, c);
+                showCustomAlert("提示已幫您標記了一個地雷！", null);
+            } else {
+                // 如果不是地雷，自動揭開
+                revealCellAndNeighbors(r, c);
+                showCustomAlert("提示已幫您揭開了一個安全方塊！", null);
+            }
+            return;
+        }
+
         if (!game.firstClickDone) {
             placeMinesAfterFirstClick(game, r, c);
         }
@@ -924,7 +988,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cell = game.board[r][c];
 
         if (cell.isRevealed && !isChordingTrigger && cell.adjacentMines > 0) {
-            let flaggedNeighbors = 0;
+            let flaggedOrRevealedMinesCount = 0;  // 改名为更准确的变量名
             const neighborsToReveal = [];
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
@@ -932,16 +996,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nr = r + dr;
                     const nc = c + dc;
                     if (nr >= 0 && nr < game.size && nc >= 0 && nc < game.size) {
-                        if (game.board[nr][nc].isFlagged) {
-                            flaggedNeighbors++;
-                        } else if (!game.board[nr][nc].isRevealed) {
+                        const neighbor = game.board[nr][nc];
+                        // 计算标记为旗子或已揭开的炸弹
+                        if (neighbor.isFlagged || (neighbor.isRevealed && neighbor.isMine)) {
+                            flaggedOrRevealedMinesCount++;
+                        } else if (!neighbor.isRevealed) {
                             neighborsToReveal.push({ r: nr, c: nc });
                         }
                     }
                 }
             }
 
-            if (flaggedNeighbors === cell.adjacentMines) {
+            // 使用 flaggedOrRevealedMinesCount 而不是 flaggedNeighbors
+            if (flaggedOrRevealedMinesCount === cell.adjacentMines) {
                 neighborsToReveal.forEach(n => revealMinesweeperCell(n.r, n.c, true));
             }
             if (!isChordingTrigger && neighborsToReveal.length > 0) {
@@ -995,6 +1062,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 新增：揭開方塊及其相鄰方塊（用於提示功能）
+    function revealCellAndNeighbors(r, c) {
+        const game = currentMinesweeperGame;
+        if (!game || game.gameOver) return;
+        
+        const cell = game.board[r][c];
+        if (cell.isRevealed || cell.isFlagged) return;
+        
+        cell.isRevealed = true;
+        game.revealedCount++;
+        
+        if (cell.adjacentMines === 0) {
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    if (dr === 0 && dc === 0) continue;
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (nr >= 0 && nr < game.size && nc >= 0 && nc < game.size) {
+                        if (!game.board[nr][nc].isRevealed && !game.board[nr][nc].isFlagged) {
+                            revealCellAndNeighbors(nr, nc);
+                        }
+                    }
+                }
+            }
+        }
+        
+        renderMinesweeperBoard();
+        checkMinesweeperWinCondition();
+    }
+
     function toggleMinesweeperFlag(r, c) {
         if (!currentMinesweeperGame || currentMinesweeperGame.gameOver || !currentMinesweeperGame.firstClickDone) return;
         const game = currentMinesweeperGame;
@@ -1020,7 +1117,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const mainLevelProgress = playerData.levelProgress[currentMainLevelId];
         const wasFirstTimeCompletionAttempt = currentPlayingSubLevelIndex >= mainLevelProgress.completedSubLevels;
-
 
         if (safeCellsRevealedSoFar === safeCellsTotal && game.errorsMadeCount < game.maxErrorsAllowed) {
             game.gameOver = true;
@@ -1086,6 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (minesLeftDisplay) minesLeftDisplay.textContent = game.firstClickDone ? (game.numMines - game.flagsPlaced) : game.numMines;
         if (errorsMadeDisplay) errorsMadeDisplay.textContent = game.errorsMadeCount;
         if (maxErrorsDisplay) maxErrorsDisplay.textContent = game.maxErrorsAllowed;
+        if (hintsLeftDisplay) hintsLeftDisplay.textContent = currentMainLevelConfig.maxHints - hintsUsedInCurrentSubLevel;
     }
 
     function awardPuzzlePiece() {
@@ -1129,7 +1226,6 @@ document.addEventListener('DOMContentLoaded', () => {
         saveLevelProgress(currentMainLevelId);
         return pieceActuallyAwardedThisTime;
     }
-
 
     // --- Jigsaw Puzzle (拼圖遊戲邏輯) ---
     let draggedPieceElement = null;
@@ -1349,7 +1445,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     // --- Main Application Logic (主應用程式邏輯與事件監聽) ---
     let pressTimer = null;
     let isLongPress = false;
@@ -1384,7 +1479,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (resetInfoMessage) resetInfoMessage.textContent = '';
             });
         }
-
 
         if (showRegisterLink) {
             showRegisterLink.addEventListener('click', (e) => {
@@ -1478,9 +1572,53 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        const playJigsawButton = document.getElementById('play-jigsaw-button');
         if (playJigsawButton) {
             playJigsawButton.addEventListener('click', startJigsawGame);
+        }
+
+        // 新增：上一關按鈕事件監聽
+        if (prevLevelButton) {
+            prevLevelButton.addEventListener('click', () => {
+                if (currentMainLevelId && currentMainLevelId > 1) {
+                    const prevLevelId = currentMainLevelId - 1;
+                    loadMainLevel(prevLevelId);
+                }
+            });
+        }
+
+        // 新增：下一關按鈕事件監聽
+        if (nextLevelButton) {
+            nextLevelButton.addEventListener('click', () => {
+                if (currentMainLevelId && currentMainLevelId < GAME_LEVELS.length) {
+                    const nextLevelId = currentMainLevelId + 1;
+                    if (nextLevelId <= playerData.maxUnlockedLevel) {
+                        loadMainLevel(nextLevelId);
+                    }
+                }
+            });
+        }
+
+        // 新增：提示按鈕事件監聽
+        const minesweeperHintButton = document.getElementById('minesweeper-hint-button');
+        if (minesweeperHintButton) {
+            minesweeperHintButton.addEventListener('click', () => {
+                if (!currentMinesweeperGame || currentMinesweeperGame.gameOver || !currentMainLevelConfig) return;
+                
+                const remainingHints = currentMainLevelConfig.maxHints - hintsUsedInCurrentSubLevel;
+                if (remainingHints <= 0) {
+                    showCustomAlert("本小關卡的提示次數已用完！", null);
+                    return;
+                }
+                
+                showHintConfirmModal((confirmed) => {
+                    if (confirmed) {
+                        hintsUsedInCurrentSubLevel++;
+                        hintModeActive = true;
+                        updateMinesweeperInfo();
+                        showCustomAlert("提示已啟用！請點擊一個方塊來使用提示。", null);
+                    }
+                });
+            });
         }
 
         if (minesweeperGridElement) {
@@ -1566,7 +1704,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 250);
         });
 
-        // ▼▼▼ 在此處新增以下程式碼 ▼▼▼
         if (showGameRulesButton) {
             showGameRulesButton.addEventListener('click', () => {
                 showInstructionsModal(null); // 呼叫顯示遊戲總說明的函式
@@ -1578,8 +1715,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 showMinesweeperTutorialModal(null); // 呼叫顯示踩地雷教學的函式
             });
         }
-        // ▲▲▲ 新增結束 ▲▲▲
-
     }
 
     function populateLevelSelectScreen() {
@@ -1629,6 +1764,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentLevelTitle) currentLevelTitle.textContent = `${currentMainLevelConfig.name}`;
         populateSubLevelButtons();
         updateLevelPuzzleProgressDisplay();
+        
+        // 檢查是否顯示上一關按鈕
+        if (prevLevelButton) {
+            if (currentMainLevelId > 1) {
+                prevLevelButton.style.display = 'inline-block';
+            } else {
+                prevLevelButton.style.display = 'none';
+            }
+        }
+        
+        // 檢查是否顯示下一關按鈕
+        if (nextLevelButton) {
+            const levelProgress = playerData.levelProgress[currentMainLevelId];
+            if (levelProgress && levelProgress.isPuzzleComplete && 
+                currentMainLevelId < GAME_LEVELS.length && 
+                currentMainLevelId < playerData.maxUnlockedLevel) {
+                nextLevelButton.style.display = 'inline-block';
+            } else {
+                nextLevelButton.style.display = 'none';
+            }
+        }
+        
         showScreen('inLevel');
     }
 
@@ -1703,7 +1860,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
 
-
     function updateLevelPuzzleProgressDisplay() {
         if (!currentMainLevelConfig || !playerData.levelProgress[currentMainLevelId] || !levelPuzzleProgressDisplay) {
             if (levelPuzzleProgressDisplay) levelPuzzleProgressDisplay.textContent = "拼圖進度: 數據錯誤";
@@ -1725,7 +1881,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         levelPuzzleProgressDisplay.textContent = progressText;
     }
-
 
     function startJigsawGame() {
         console.log("[startJigsawGame] Called. currentMainLevelId is:", currentMainLevelId, typeof currentMainLevelId);
@@ -1854,7 +2009,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen('auth');
         showLoading(false);
     }
-
 
     // --- 初始化遊戲 ---
     initializeUI();

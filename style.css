@@ -115,6 +115,24 @@ button:disabled {
     background-color: #c0392b;
 }
 
+/* 踩地雷控制按鈕 */
+.minesweeper-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+#minesweeper-hint-button {
+    background-color: #f39c12; /* 提示按鈕用橙色 */
+}
+#minesweeper-hint-button:hover {
+    background-color: #e67e22;
+}
+#minesweeper-hint-button:disabled {
+    background-color: #bdc3c7;
+    color: #7f8c8d;
+}
 
 /* --- 輸入框 --- */
 input[type="text"],
@@ -610,5 +628,10 @@ hr {
 
     #minesweeper-grid-container {
         /* JS 中的 cellSize 計算會處理大部分情況 */
+    }
+    
+    .minesweeper-controls {
+        flex-direction: column;
+        gap: 10px;
     }
 }
