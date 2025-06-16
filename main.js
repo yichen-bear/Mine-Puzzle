@@ -2125,7 +2125,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUser = user;
                 await loadPlayerData(user.uid, user.isAnonymous, user);
 
-                if (usernameDisplay) usernameDisplay.textContent = playerData.username;
+                if (usernameDisplay) {
+                    // 檢查使用者是否為訪客，若是，則顯示原本的玩家名稱(playerData.username)
+                    // 如果不是訪客，則顯示用戶的電子郵件(user.email)
+                    if (user.isAnonymous) {
+                        usernameDisplay.textContent = playerData.username;
+                    } else {
+                        usernameDisplay.textContent = user.email;
+                    }
+                }
                 if (userInfoContainer) userInfoContainer.style.display = 'flex';
                 if (logoutButton) logoutButton.style.display = 'inline-block';
 
