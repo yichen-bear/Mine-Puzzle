@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let playerData = {
         username: '',
         maxUnlockedLevel: 1,
-        hasSeenMinesweeperTutorial: false, // **新增：追蹤是否看過踩地雷教學**
+        hasSeenMinesweeperTutorial: false,
         levelProgress: {}
     };
     let hintModeActive = false; // 新增：提示模式是否激活
@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inLevel: document.getElementById('in-level-screen'),
         minesweeper: document.getElementById('minesweeper-screen'),
         jigsaw: document.getElementById('jigsaw-screen'),
+        achievements: document.getElementById('achievements-screen')
     };
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
@@ -90,6 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const playJigsawButton = document.getElementById('play-jigsaw-button');
     const prevLevelButton = document.getElementById('prev-level-button');
     const nextLevelButton = document.getElementById('next-level-button');
+    const viewAchievementsButton = document.getElementById('view-achievements-button');
+    const backToMainFromAchievements = document.getElementById('back-to-main-from-achievements');
     
     // 遊戲說明 Modal 參照
     const instructionsModal = document.getElementById('instructions-modal');
@@ -99,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tutorialQueryYesButton = document.getElementById('tutorial-query-yes-button');
     const tutorialQueryNoButton = document.getElementById('tutorial-query-no-button');
     
-    // **新增：踩地雷教學 Modal 參照**
+    // 踩地雷教學 Modal 參照
     const minesweeperTutorialModal = document.getElementById('minesweeper-tutorial-modal');
     const tutorialSkipButton = document.getElementById('tutorial-skip-button');
     const tutorialStartButton = document.getElementById('tutorial-start-button');
@@ -126,6 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const hintConfirmYesButton = document.getElementById('hint-confirm-yes');
     const hintConfirmNoButton = document.getElementById('hint-confirm-no');
     const hintRemainingCount = document.getElementById('hint-remaining-count');
+    const completionModal = document.getElementById('completion-modal');
+    const viewAchievementsModal = document.getElementById('view-achievements-modal');
+    const closeCompletion = document.getElementById('close-completion');
 
     // --- 遊戲關卡設定 (GAME_LEVELS) ---
     const GAME_LEVELS = [
@@ -135,11 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
             completionImagePath: "assets/img/good1.png",
             puzzlePiecesCount: 9, puzzleRows: 3, puzzleCols: 3,
             msGridSize: 10,
-            msMaxErrors: 2,
+            msMaxErrors: 1,
             subLevelsCount: 9,
             msDensityStart: 0.08,
             msDensityEnd: 0.13,
-            maxHints: 1 // 新增：第一關提示次數
+            maxHints: 1
         },
         {
             id: 2, name: "第二關",
@@ -147,11 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
             completionImagePath: "assets/img/good2-1.png",
             puzzlePiecesCount: 16, puzzleRows: 4, puzzleCols: 4,
             msGridSize: 15,
-            msMaxErrors: 3,
+            msMaxErrors: 2,
             subLevelsCount: 16,
             msDensityStart: 0.12,
             msDensityEnd: 0.16,
-            maxHints: 2 // 新增：第二關提示次數
+            maxHints: 2
         },
         {
             id: 3, name: "第三關",
@@ -159,12 +165,24 @@ document.addEventListener('DOMContentLoaded', () => {
             completionImagePath: "assets/img/good3.png",
             puzzlePiecesCount: 25, puzzleRows: 5, puzzleCols: 5,
             msGridSize: 20,
-            msMaxErrors: 4,
+            msMaxErrors: 3,
             subLevelsCount: 25,
             msDensityStart: 0.15,
             msDensityEnd: 0.18,
-            maxHints: 3 // 新增：第三關提示次數
+            maxHints: 3
         },
+        {
+            id: 4, name: "第四關",
+            imagePath: "assets/img/第四關拼圖.jpg",
+            completionImagePath: "assets/img/good4.png",
+            puzzlePiecesCount: 30, puzzleRows: 5, puzzleCols: 6,
+            msGridSize: 23,
+            msMaxErrors: 5,
+            subLevelsCount: 30,
+            msDensityStart: 0.17,
+            msDensityEnd: 0.21,
+            maxHints: 4
+        }
     ];
 
     // --- 工具函數 ---
@@ -198,8 +216,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFullTutorialCloseHandler = null;
     let currentHintConfirmYesHandler = null;
     let currentHintConfirmNoHandler = null;
+    let currentViewAchievementsHandler = null;
+    let currentCloseCompletionHandler = null;
 
-    // **新增：顯示遊戲說明的 Modal 函數**
+    // 顯示遊戲說明的 Modal 函數
     function showInstructionsModal(callback) {
         if (currentInstructionsOkHandler) {
             instructionsOkButton.removeEventListener('click', currentInstructionsOkHandler);
@@ -237,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tutorialQueryNoButton.addEventListener('click', noHandler);
     }
     
-    // **新增：顯示踩地雷教學的 Modal 函數**
+    // 顯示踩地雷教學的 Modal 函數
     function showMinesweeperTutorialModal(callback) {
         if (currentFullTutorialCloseHandler) {
             tutorialStartButton.removeEventListener('click', currentFullTutorialCloseHandler);
@@ -418,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 新增：顯示提示確認 Modal 的函數
+    // 顯示提示確認 Modal 的函數
     function showHintConfirmModal(callback) {
         if (hintConfirmModal && hintConfirmYesButton && hintConfirmNoButton) {
             const modalButtonsContainer = hintConfirmModal.querySelector('.modal-buttons');
@@ -456,6 +476,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 顯示完成所有關卡的 Modal
+    function showCompletionModal() {
+        if (completionModal) {
+            completionModal.classList.add('active');
+            
+            if (currentViewAchievementsHandler) {
+                viewAchievementsModal.removeEventListener('click', currentViewAchievementsHandler);
+            }
+            if (currentCloseCompletionHandler) {
+                closeCompletion.removeEventListener('click', currentCloseCompletionHandler);
+            }
+            
+            currentViewAchievementsHandler = () => {
+                completionModal.classList.remove('active');
+                showAchievementsScreen();
+            };
+            
+            currentCloseCompletionHandler = () => {
+                completionModal.classList.remove('active');
+                populateLevelSelectScreen();
+                showScreen('levelSelect');
+            };
+            
+            viewAchievementsModal.addEventListener('click', currentViewAchievementsHandler);
+            closeCompletion.addEventListener('click', currentCloseCompletionHandler);
+        }
+    }
+
+    // 顯示成就畫面
+    function showAchievementsScreen() {
+        // 檢查每個關卡是否已完成
+        const allLevelsCompleted = GAME_LEVELS.every(level => {
+            const progress = playerData.levelProgress[level.id];
+            return progress && progress.isPuzzleComplete;
+        });
+
+        // 更新成就畫面內容
+        GAME_LEVELS.forEach(level => {
+            const progress = playerData.levelProgress[level.id];
+            const achievementElement = document.getElementById(`achievement-level-${level.id}`);
+            
+            if (achievementElement && progress) {
+                if (progress.isPuzzleComplete) {
+                    achievementElement.style.backgroundImage = `url('${level.imagePath}')`;
+                    achievementElement.style.backgroundSize = 'cover';
+                    
+                    // 顯示徽章
+                    const badgeElement = achievementElement.nextElementSibling;
+                    if (badgeElement && badgeElement.classList.contains('achievement-badge')) {
+                        badgeElement.style.display = 'block';
+                    }
+                } else {
+                    achievementElement.style.backgroundImage = 'none';
+                    achievementElement.style.backgroundColor = '#f8f9fa';
+                    achievementElement.textContent = '尚未完成';
+                }
+            }
+        });
+
+        // 如果全部完成，顯示最終徽章
+        if (allLevelsCompleted) {
+            const completionBadge = document.querySelector('.completion-badge');
+            if (completionBadge) {
+                completionBadge.style.display = 'block';
+            }
+        }
+
+        showScreen('achievements');
+    }
+
     // --- Firebase Authentication ---
     async function registerUser(email, password) {
         if (loginErrorMsg) loginErrorMsg.textContent = '';
@@ -481,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 username: defaultUsername,
                 email: user.email,
                 maxUnlockedLevel: 1,
-                hasSeenMinesweeperTutorial: false, // **新增**
+                hasSeenMinesweeperTutorial: false,
                 levelProgress: {}
             };
             GAME_LEVELS.forEach(level => {
@@ -554,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     username: user.displayName || user.email.split('@')[0] || `玩家${user.uid.substring(0, 5)}`,
                     email: user.email,
                     maxUnlockedLevel: 1,
-                    hasSeenMinesweeperTutorial: false, // **新增**
+                    hasSeenMinesweeperTutorial: false,
                     levelProgress: {}
                 };
                 GAME_LEVELS.forEach(level => {
@@ -598,7 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const initialPlayerData = {
                     username: "訪客玩家",
                     maxUnlockedLevel: 1,
-                    hasSeenMinesweeperTutorial: false, // **新增**
+                    hasSeenMinesweeperTutorial: false,
                     levelProgress: {}
                 };
                 GAME_LEVELS.forEach(level => {
@@ -662,6 +752,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Firestore Database (資料庫邏輯) ---
     async function loadPlayerData(userId, isAnonymous, authUser) {
+        const DATA_VERSION = 2; // 每次新增關卡時遞增
+
+        if (playerData.dataVersion < DATA_VERSION) {
+            // 自動遷移舊資料
+            GAME_LEVELS.forEach(level => {
+                if (!playerData.levelProgress[level.id]) {
+                    // 初始化新關卡資料
+                }
+            });
+            
+            // 更新解鎖狀態
+            playerData.maxUnlockedLevel = Math.max(
+                playerData.maxUnlockedLevel,
+                GAME_LEVELS.findIndex(l => !playerData.levelProgress[l.id]?.isPuzzleComplete)
+            );
+            
+            playerData.dataVersion = DATA_VERSION;
+            await savePlayerGlobalData();
+        }
+
         showLoading(true);
         try {
             const userDocRef = db.collection('playerData').doc(userId);
@@ -674,7 +784,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     levelProgress: {},
                     ...userDoc.data()
                 };
-                // **新增：確保教學旗標存在，若不存在則設為 false**
                 playerData.hasSeenMinesweeperTutorial = playerData.hasSeenMinesweeperTutorial || false;
 
                 GAME_LEVELS.forEach(mainLevel => {
@@ -686,7 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             completedSubLevels: 0
                         };
                     } else {
-                        // 確保舊資料有這些欄位，避免 undefined 錯誤
                         if (typeof playerData.levelProgress[mainLevel.id].completedSubLevels === 'undefined') {
                             playerData.levelProgress[mainLevel.id].completedSubLevels = 0;
                         }
@@ -704,7 +812,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 playerData.username = isAnonymous ? "訪客玩家" : (authUser.displayName || (authUser.email ? authUser.email.split('@')[0] : `玩家${userId.substring(0, 5)}`));
                 if (!isAnonymous && authUser.email) playerData.email = authUser.email;
                 playerData.maxUnlockedLevel = 1;
-                playerData.hasSeenMinesweeperTutorial = false; // **新增**
+                playerData.hasSeenMinesweeperTutorial = false;
                 playerData.levelProgress = {};
 
                 GAME_LEVELS.forEach(mainLevel => {
@@ -720,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     username: playerData.username,
                     email: playerData.email || '',
                     maxUnlockedLevel: playerData.maxUnlockedLevel,
-                    hasSeenMinesweeperTutorial: playerData.hasSeenMinesweeperTutorial, // **新增**
+                    hasSeenMinesweeperTutorial: playerData.hasSeenMinesweeperTutorial,
                     levelProgress: playerData.levelProgress
                 });
             }
@@ -729,6 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("載入玩家數據錯誤:", error);
         }
         showLoading(false);
+
     }
 
     async function savePlayerGlobalData() {
@@ -737,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataToSave = {
                 username: playerData.username,
                 maxUnlockedLevel: playerData.maxUnlockedLevel,
-                hasSeenMinesweeperTutorial: playerData.hasSeenMinesweeperTutorial, // **新增：儲存教學旗標**
+                hasSeenMinesweeperTutorial: playerData.hasSeenMinesweeperTutorial,
             };
             if (playerData.email) {
                 dataToSave.email = playerData.email;
@@ -1198,20 +1307,25 @@ document.addEventListener('DOMContentLoaded', () => {
             mainLevelProgress.completedSubLevels++;
             console.log(`主關卡 ${currentMainLevelId} 的已完成小關卡數更新為: ${mainLevelProgress.completedSubLevels}`);
 
+            // 修改拼圖碎片獲取邏輯，改為隨機獲取
             if (mainLevelProgress.ownedPieces.length < currentMainLevelConfig.puzzlePiecesCount) {
+                // 找出所有可能的拼圖碎片ID
                 const allPieceIdsForMainLevel = [];
                 for (let r = 0; r < currentMainLevelConfig.puzzleRows; r++) {
                     for (let c = 0; c < currentMainLevelConfig.puzzleCols; c++) {
                         allPieceIdsForMainLevel.push(`piece_r${r}c${c}`);
                     }
                 }
+                
+                // 找出尚未獲得的拼圖碎片
                 const unownedPieceIds = allPieceIdsForMainLevel.filter(id => !mainLevelProgress.ownedPieces.includes(id));
-
+                
+                // 隨機獲取一個拼圖碎片
                 if (unownedPieceIds.length > 0) {
                     const randomIndex = Math.floor(Math.random() * unownedPieceIds.length);
-                    const newPieceId = unownedPieceIds[randomIndex];
-                    mainLevelProgress.ownedPieces.push(newPieceId);
-                    console.log(`獎勵拼圖碎片: ${newPieceId} (主關卡 ${currentMainLevelId})`);
+                    const randomPieceId = unownedPieceIds[randomIndex];
+                    mainLevelProgress.ownedPieces.push(randomPieceId);
+                    console.log(`獎勵拼圖碎片: ${randomPieceId} (主關卡 ${currentMainLevelId})`);
                     pieceActuallyAwardedThisTime = true;
                 } else {
                     console.log(`主關卡 ${currentMainLevelId} 的所有拼圖碎片均已擁有 (在首次完成此小關卡時檢查)。`);
@@ -1434,8 +1548,18 @@ document.addEventListener('DOMContentLoaded', () => {
             showCustomAlert(`${currentMainLevelConfig.name} 拼圖已完成！`, () => {
                 if (!wasAlreadyComplete && currentMainLevelConfig.completionImagePath) {
                     showCompletionImageModal(currentMainLevelConfig.completionImagePath, () => {
-                        loadMainLevel(currentMainLevelId);
-                        showScreen('inLevel');
+                        // 檢查是否已完成所有關卡
+                        const allLevelsCompleted = GAME_LEVELS.every(level => {
+                            const progress = playerData.levelProgress[level.id];
+                            return progress && progress.isPuzzleComplete;
+                        });
+
+                        if (allLevelsCompleted) {
+                            showCompletionModal();
+                        } else {
+                            loadMainLevel(currentMainLevelId);
+                            showScreen('inLevel');
+                        }
                     });
                 } else {
                     loadMainLevel(currentMainLevelId);
@@ -1576,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playJigsawButton.addEventListener('click', startJigsawGame);
         }
 
-        // 新增：上一關按鈕事件監聽
+        // 上一關按鈕事件監聽
         if (prevLevelButton) {
             prevLevelButton.addEventListener('click', () => {
                 if (currentMainLevelId && currentMainLevelId > 1) {
@@ -1586,7 +1710,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 新增：下一關按鈕事件監聽
+        // 下一關按鈕事件監聽
         if (nextLevelButton) {
             nextLevelButton.addEventListener('click', () => {
                 if (currentMainLevelId && currentMainLevelId < GAME_LEVELS.length) {
@@ -1598,7 +1722,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 新增：提示按鈕事件監聽
+        // 提示按鈕事件監聽
         const minesweeperHintButton = document.getElementById('minesweeper-hint-button');
         if (minesweeperHintButton) {
             minesweeperHintButton.addEventListener('click', () => {
@@ -1618,6 +1742,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         showCustomAlert("提示已啟用！請點擊一個方塊來使用提示。", null);
                     }
                 });
+            });
+        }
+
+        // 成就瀏覽按鈕事件監聽
+        if (viewAchievementsButton) {
+            viewAchievementsButton.addEventListener('click', showAchievementsScreen);
+        }
+
+        if (backToMainFromAchievements) {
+            backToMainFromAchievements.addEventListener('click', () => {
+                populateLevelSelectScreen();
+                showScreen('levelSelect');
             });
         }
 
@@ -1706,13 +1842,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (showGameRulesButton) {
             showGameRulesButton.addEventListener('click', () => {
-                showInstructionsModal(null); // 呼叫顯示遊戲總說明的函式
+                showInstructionsModal(null);
             });
         }
         
         if (showMinesweeperRulesButton) {
             showMinesweeperRulesButton.addEventListener('click', () => {
-                showMinesweeperTutorialModal(null); // 呼叫顯示踩地雷教學的函式
+                showMinesweeperTutorialModal(null);
             });
         }
     }
@@ -1720,6 +1856,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateLevelSelectScreen() {
         if (!levelSelectButtonsContainer) return;
         levelSelectButtonsContainer.innerHTML = '';
+        
+        // 檢查是否所有關卡都已完成
+        const allLevelsCompleted = GAME_LEVELS.every(level => {
+            const progress = playerData.levelProgress[level.id];
+            return progress && progress.isPuzzleComplete;
+        });
+
         GAME_LEVELS.forEach(level => {
             const button = document.createElement('button');
             button.textContent = level.name;
@@ -1732,6 +1875,13 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', () => loadMainLevel(level.id));
             levelSelectButtonsContainer.appendChild(button);
         });
+
+        // 如果所有關卡都已完成，顯示瀏覽成就按鈕
+        if (allLevelsCompleted && viewAchievementsButton) {
+            viewAchievementsButton.style.display = 'inline-block';
+        } else if (viewAchievementsButton) {
+            viewAchievementsButton.style.display = 'none';
+        }
     }
 
     function loadMainLevel(mainLevelIdToLoad) {

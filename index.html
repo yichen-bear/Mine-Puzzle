@@ -12,15 +12,14 @@
     <script>
         // Firebase 設定物件
         const firebaseConfig = {
-            apiKey: "AIzaSyB-iMHMvDmMViANx33ho-Ac3rwitt8FE-w", // 請確認這是您正確的 API Key
+            apiKey: "AIzaSyB-iMHMvDmMViANx33ho-Ac3rwitt8FE-w",
             authDomain: "mine-puzzle-quest.firebaseapp.com",
             projectId: "mine-puzzle-quest",
-            storageBucket: "mine-puzzle-quest.appspot.com", // 通常是 xxx.appspot.com
+            storageBucket: "mine-puzzle-quest.appspot.com",
             messagingSenderId: "87559816136",
             appId: "1:87559816136:web:2fe898e7ebbb9ee9f776fd",
-            measurementId: "G-ESC61WWY0P" // 可選
+            measurementId: "G-ESC61WWY0P"
         };
-        // Firebase 初始化將在 main.js 中處理
     </script>
 </head>
 <body>
@@ -69,6 +68,11 @@
         <div id="level-select-screen" class="screen">
             <h2>選擇關卡</h2>
             <div id="level-select-buttons">
+                <button data-level="1">第一關</button>
+                <button data-level="2">第二關</button>
+                <button data-level="3">第三關</button>
+                <button data-level="4">第四關</button>
+                <button id="view-achievements-button" style="display:none;">瀏覽成就</button>
             </div>
 
             <div class="rules-buttons-container" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
@@ -112,13 +116,40 @@
         <div id="jigsaw-screen" class="screen">
             <h2 id="jigsaw-level-title">拼圖遊戲</h2>
             <div id="jigsaw-puzzle-area">
-                <div id="jigsaw-frame-container">
-                </div>
-                <div id="jigsaw-pieces-container">
-                </div>
+                <div id="jigsaw-frame-container"></div>
+                <div id="jigsaw-pieces-container"></div>
             </div>
             <p id="jigsaw-message" class="error-message"></p>
             <button id="jigsaw-back-button">儲存並返回</button>
+        </div>
+
+        <!-- 新增成就瀏覽畫面 -->
+        <div id="achievements-screen" class="screen">
+            <h2>我的成就</h2>
+            <div id="achievements-container">
+                <div class="achievement-level">
+                    <h3>第一關</h3>
+                    <div class="achievement-puzzle" id="achievement-level-1"></div>
+                    <img class="achievement-badge" src="assets/img/good1.png" alt="好棒棒徽章" style="display:none;">
+                </div>
+                <div class="achievement-level">
+                    <h3>第二關</h3>
+                    <div class="achievement-puzzle" id="achievement-level-2"></div>
+                    <img class="achievement-badge" src="assets/img/good2.png" alt="好棒棒徽章" style="display:none;">
+                </div>
+                <div class="achievement-level">
+                    <h3>第三關</h3>
+                    <div class="achievement-puzzle" id="achievement-level-3"></div>
+                    <img class="achievement-badge" src="assets/img/good3.png" alt="好棒棒徽章" style="display:none;">
+                </div>
+                <div class="achievement-level">
+                    <h3>第四關</h3>
+                    <div class="achievement-puzzle" id="achievement-level-4"></div>
+                    <img class="achievement-badge" src="assets/img/good4.png" alt="好棒棒徽章" style="display:none;">
+                    <img class="completion-badge" src="assets/img/verygood.png" alt="全部完成" style="display:none;">
+                </div>
+            </div>
+            <button id="back-to-main-from-achievements">返回主畫面</button>
         </div>
     </div>
 
@@ -129,7 +160,7 @@
             <p class="instructions-text">
                 <strong>遊戲說明：</strong><br>
                 這個遊戲結合了經典的「踩地雷」和有趣的「拼圖」！<br>
-                &bull; 遊戲總共分為三大關卡。<br>
+                &bull; 遊戲總共分為四大關卡。<br>
                 &bull; 每一大關中，包含數個踩地雷小遊戲。<br>
                 &bull; 成功完成一個踩地雷小關卡，你將會隨機獲得一枚獨特的拼圖碎片！<br>
                 &bull; 收集碎片後，就可以到「開始拼圖」挑戰，將美麗的圖片還原。<br>
@@ -142,18 +173,16 @@
         </div>
     </div>
     
-    <!-- === 新增：詢問是否需要踩地雷教學的 Modal === -->
     <div id="minesweeper-tutorial-query-modal" class="modal-overlay">
         <div class="modal-content">
             <h3>踩地雷新手教學</h3>
             <p>在開始前，請問您熟悉踩地雷的規則嗎？</p>
             <div class="modal-buttons">
-                <button id="tutorial-query-no-button" class="modal-button-cancel">沒玩過，請教我</button>
-                <button id="tutorial-query-yes-button" class="modal-button-confirm">玩過了，直接開始</button>
+                <button id="tutorial-query-no-button" class="modal-button-cancel">沒玩過</button>
+                <button id="tutorial-query-yes-button" class="modal-button-confirm">玩過了</button>
             </div>
         </div>
     </div>
-    <!-- ======================================= -->
 
     <div id="minesweeper-tutorial-modal" class="modal-overlay">
         <div class="modal-content">
@@ -223,6 +252,19 @@
             <div class="modal-buttons">
                 <button id="hint-confirm-no" class="modal-button-cancel">取消</button>
                 <button id="hint-confirm-yes" class="modal-button-confirm">確定使用</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增完成全部關卡 Modal -->
+    <div id="completion-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>恭喜完成所有關卡！</h3>
+            <img src="assets/img/verygood.png" alt="全部完成" style="max-width:100%; margin:15px 0;">
+            <p>您已經成功完成了所有四個關卡，真是了不起的成就！</p>
+            <div class="modal-buttons">
+                <button id="view-achievements-modal" class="modal-button-confirm">瀏覽成就</button>
+                <button id="close-completion" class="modal-button-cancel">確認</button>
             </div>
         </div>
     </div>
