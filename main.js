@@ -1307,7 +1307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mainLevelProgress.completedSubLevels++;
             console.log(`主關卡 ${currentMainLevelId} 的已完成小關卡數更新為: ${mainLevelProgress.completedSubLevels}`);
 
-            // 修改拼圖碎片獲取邏輯，改為隨機獲取
+            // 修改拼圖碎片獲取邏輯，改為隨機獲取並記錄獲得順序
             if (mainLevelProgress.ownedPieces.length < currentMainLevelConfig.puzzlePiecesCount) {
                 // 找出所有可能的拼圖碎片ID
                 const allPieceIdsForMainLevel = [];
@@ -1324,6 +1324,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (unownedPieceIds.length > 0) {
                     const randomIndex = Math.floor(Math.random() * unownedPieceIds.length);
                     const randomPieceId = unownedPieceIds[randomIndex];
+                    
+                    // 新增：記錄獲得順序
+                    if (!mainLevelProgress.acquisitionOrder) {
+                        mainLevelProgress.acquisitionOrder = [];
+                    }
+                    mainLevelProgress.acquisitionOrder.push(randomPieceId);
+                    
                     mainLevelProgress.ownedPieces.push(randomPieceId);
                     console.log(`獎勵拼圖碎片: ${randomPieceId} (主關卡 ${currentMainLevelId})`);
                     pieceActuallyAwardedThisTime = true;
@@ -1352,6 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const scrollX = window.scrollX;
         const scrollY = window.scrollY;
 
+        // 重置拼圖狀態
         currentJigsawState = { image: null, pieces: [], slots: [], ownedPieceIds: [], placedPieceMap: {} };
         if (jigsawFrameContainer) jigsawFrameContainer.innerHTML = '';
         if (jigsawPiecesContainer) jigsawPiecesContainer.innerHTML = '';
@@ -1362,98 +1370,141 @@ document.addEventListener('DOMContentLoaded', () => {
             if (jigsawMessage) jigsawMessage.textContent = "無法載入拼圖進度。";
             return;
         }
-        currentJigsawState.ownedPieceIds = [...(levelProgress.ownedPieces || [])];
-        currentJigsawState.placedPieceMap = { ...(levelProgress.placedPieces || {}) };
 
+        // 載入拼圖圖片
         const img = new Image();
         img.src = currentMainLevelConfig.imagePath;
-
+        
         showLoading(true);
-        img.onload = () => {
-            currentJigsawState.image = img;
-            const naturalPieceWidth = img.naturalWidth / currentMainLevelConfig.puzzleCols;
-            const naturalPieceHeight = img.naturalHeight / currentMainLevelConfig.puzzleRows;
+        
+        return new Promise((resolve) => {
+            img.onload = () => {
+                currentJigsawState.image = img;
+                const naturalPieceWidth = img.naturalWidth / currentMainLevelConfig.puzzleCols;
+                const naturalPieceHeight = img.naturalHeight / currentMainLevelConfig.puzzleRows;
 
-            const jigsawArea = document.getElementById('jigsaw-puzzle-area');
-            let availableWidth = window.innerWidth * 0.9;
-            if (jigsawArea && jigsawArea.offsetParent) {
-                availableWidth = jigsawArea.clientWidth * 0.9;
-            }
-            const frameContainerMaxWidth = Math.min(600, availableWidth);
+                // 計算拼圖碎片顯示尺寸
+                const jigsawArea = document.getElementById('jigsaw-puzzle-area');
+                let availableWidth = window.innerWidth * 0.9;
+                if (jigsawArea && jigsawArea.offsetParent) {
+                    availableWidth = jigsawArea.clientWidth * 0.9;
+                }
+                const frameContainerMaxWidth = Math.min(600, availableWidth);
+                const scale = frameContainerMaxWidth / img.naturalWidth;
+                const displayPieceWidth = naturalPieceWidth * scale;
+                const displayPieceHeight = naturalPieceHeight * scale;
 
-            const scale = frameContainerMaxWidth / img.naturalWidth;
-            const displayPieceWidth = naturalPieceWidth * scale;
-            const displayPieceHeight = naturalPieceHeight * scale;
+                // 設定拼圖板網格
+                jigsawFrameContainer.style.gridTemplateColumns = `repeat(${currentMainLevelConfig.puzzleCols}, ${displayPieceWidth}px)`;
+                jigsawFrameContainer.style.gridTemplateRows = `repeat(${currentMainLevelConfig.puzzleRows}, ${displayPieceHeight}px)`;
+                jigsawFrameContainer.style.width = `${currentMainLevelConfig.puzzleCols * displayPieceWidth}px`;
+                jigsawFrameContainer.style.height = `${currentMainLevelConfig.puzzleRows * displayPieceHeight}px`;
 
-            jigsawFrameContainer.style.gridTemplateColumns = `repeat(${currentMainLevelConfig.puzzleCols}, ${displayPieceWidth}px)`;
-            jigsawFrameContainer.style.gridTemplateRows = `repeat(${currentMainLevelConfig.puzzleRows}, ${displayPieceHeight}px)`;
-            jigsawFrameContainer.style.width = `${currentMainLevelConfig.puzzleCols * displayPieceWidth}px`;
-            jigsawFrameContainer.style.height = `${currentMainLevelConfig.puzzleRows * displayPieceHeight}px`;
+                // ======================
+                // 1. 生成所有虛線槽位（關鍵保留部分！）
+                // ======================
+                for (let r = 0; r < currentMainLevelConfig.puzzleRows; r++) {
+                    for (let c = 0; c < currentMainLevelConfig.puzzleCols; c++) {
+                        const slotId = `slot_r${r}c${c}`;
+                        const slotEl = document.createElement('div');
+                        slotEl.classList.add('jigsaw-slot');
+                        slotEl.id = slotId;
+                        slotEl.dataset.expectedRow = r;
+                        slotEl.dataset.expectedCol = c;
+                        slotEl.style.width = `${displayPieceWidth}px`;
+                        slotEl.style.height = `${displayPieceHeight}px`;
+                        jigsawFrameContainer.appendChild(slotEl);
 
-            for (let r = 0; r < currentMainLevelConfig.puzzleRows; r++) {
-                for (let c = 0; c < currentMainLevelConfig.puzzleCols; c++) {
-                    const pieceId = `piece_r${r}c${c}`;
-                    const slotId = `slot_r${r}c${c}`;
+                        // 添加拖放事件
+                        slotEl.addEventListener('dragover', e => e.preventDefault());
+                        slotEl.addEventListener('drop', handleDropOnJigsawSlot);
 
-                    const slotEl = document.createElement('div');
-                    slotEl.classList.add('jigsaw-slot');
-                    slotEl.id = slotId;
-                    slotEl.dataset.expectedRow = r;
-                    slotEl.dataset.expectedCol = c;
-                    slotEl.style.width = `${displayPieceWidth}px`;
-                    slotEl.style.height = `${displayPieceHeight}px`;
-                    jigsawFrameContainer.appendChild(slotEl);
-                    currentJigsawState.slots.push({ id: slotId, element: slotEl, r, c, correctPieceId: pieceId });
-
-                    slotEl.addEventListener('dragover', e => e.preventDefault());
-                    slotEl.addEventListener('drop', handleDropOnJigsawSlot);
-
-                    if (currentJigsawState.ownedPieceIds.includes(pieceId)) {
-                        const pieceCanvas = document.createElement('canvas');
-                        pieceCanvas.width = displayPieceWidth;
-                        pieceCanvas.height = displayPieceHeight;
-                        pieceCanvas.classList.add('jigsaw-piece');
-                        pieceCanvas.id = pieceId;
-                        pieceCanvas.dataset.pieceRow = r;
-                        pieceCanvas.dataset.pieceCol = c;
-                        pieceCanvas.draggable = true;
-
-                        const ctx = pieceCanvas.getContext('2d');
-                        ctx.drawImage(
-                            img,
-                            c * naturalPieceWidth,
-                            r * naturalPieceHeight,
-                            naturalPieceWidth,
-                            naturalPieceHeight,
-                            0,
-                            0,
-                            displayPieceWidth,
-                            displayPieceHeight
-                        );
-
-                        currentJigsawState.pieces.push({ id: pieceId, element: pieceCanvas, r, c, isPlaced: false });
-
-                        pieceCanvas.addEventListener('dragstart', handleJigsawDragStart);
-                        pieceCanvas.addEventListener('dragend', handleJigsawDragEnd);
-
-                        if (currentJigsawState.placedPieceMap[pieceId] === slotId) {
-                            placeJigsawPieceInSlot(pieceCanvas, slotEl, true);
-                        } else {
-                            jigsawPiecesContainer.appendChild(pieceCanvas);
-                        }
+                        // 記錄槽位狀態
+                        currentJigsawState.slots.push({
+                            id: slotId,
+                            element: slotEl,
+                            r, c,
+                            correctPieceId: `piece_r${r}c${c}`
+                        });
                     }
                 }
-            }
-            checkJigsawWin();
-            showLoading(false);
-            window.scrollTo(scrollX, scrollY);
-        };
-        img.onerror = () => {
-            if (jigsawMessage) jigsawMessage.textContent = "無法載入拼圖圖片: " + currentMainLevelConfig.imagePath;
-            console.error("拼圖圖片載入失敗:", currentMainLevelConfig.imagePath);
-            showLoading(false);
-            window.scrollTo(scrollX, scrollY);
-        };
+
+                // ======================
+                // 2. 按獲得順序生成拼圖碎片
+                // ======================
+                const ownedPieces = levelProgress.ownedPieces || [];
+                const acquisitionOrder = levelProgress.acquisitionOrder || [...ownedPieces]; // 兼容舊存檔
+
+                acquisitionOrder.forEach(pieceId => {
+                    const matches = pieceId.match(/piece_r(\d+)c(\d+)/);
+                    if (!matches) return;
+
+                    const r = parseInt(matches[1]);
+                    const c = parseInt(matches[2]);
+
+                    // 創建拼圖碎片
+                    const pieceCanvas = document.createElement('canvas');
+                    pieceCanvas.width = displayPieceWidth;
+                    pieceCanvas.height = displayPieceHeight;
+                    pieceCanvas.classList.add('jigsaw-piece');
+                    pieceCanvas.id = pieceId;
+                    pieceCanvas.dataset.pieceRow = r;
+                    pieceCanvas.dataset.pieceCol = c;
+                    pieceCanvas.draggable = true;
+
+                    // 繪製拼圖碎片圖像
+                    const ctx = pieceCanvas.getContext('2d');
+                    ctx.drawImage(
+                        img,
+                        c * naturalPieceWidth,
+                        r * naturalPieceHeight,
+                        naturalPieceWidth,
+                        naturalPieceHeight,
+                        0,
+                        0,
+                        displayPieceWidth,
+                        displayPieceHeight
+                    );
+
+                    // 添加拖拽事件
+                    pieceCanvas.addEventListener('dragstart', handleJigsawDragStart);
+                    pieceCanvas.addEventListener('dragend', handleJigsawDragEnd);
+
+                    // 如果已經放在拼圖板上，則直接放置
+                    if (levelProgress.placedPieces[pieceId]) {
+                        const slotEl = document.getElementById(levelProgress.placedPieces[pieceId]);
+                        if (slotEl) {
+                            placeJigsawPieceInSlot(pieceCanvas, slotEl, true);
+                            currentJigsawState.placedPieceMap[pieceId] = slotEl.id;
+                        }
+                    } 
+                    // 否則添加到拼圖碎片區
+                    else {
+                        jigsawPiecesContainer.appendChild(pieceCanvas);
+                    }
+
+                    // 記錄拼圖狀態
+                    currentJigsawState.pieces.push({
+                        id: pieceId,
+                        element: pieceCanvas,
+                        r, c,
+                        isPlaced: !!levelProgress.placedPieces[pieceId]
+                    });
+                });
+
+                showLoading(false);
+                window.scrollTo(scrollX, scrollY);
+                resolve();
+            };
+
+            img.onerror = () => {
+                if (jigsawMessage) jigsawMessage.textContent = "無法載入拼圖圖片: " + currentMainLevelConfig.imagePath;
+                console.error("拼圖圖片載入失敗:", currentMainLevelConfig.imagePath);
+                showLoading(false);
+                window.scrollTo(scrollX, scrollY);
+                resolve();
+            };
+        });
     }
 
     function handleJigsawDragStart(e) {
@@ -2135,7 +2186,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 playerData = { username: '', maxUnlockedLevel: 1, hasSeenMinesweeperTutorial: false, levelProgress: {} };
                 GAME_LEVELS.forEach(level => {
                     playerData.levelProgress[level.id] = {
-                        isPuzzleComplete: false, ownedPieces: [], placedPieces: {}, completedSubLevels: 0
+                        isPuzzleComplete: false, 
+                        ownedPieces: [], 
+                        placedPieces: {}, 
+                        completedSubLevels: 0,
+                        acquisitionOrder: [] // 新增獲得順序記錄
                     };
                 });
 
